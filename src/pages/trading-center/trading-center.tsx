@@ -26,11 +26,18 @@ const getLastDigit = (quote: number, precision = 2) => {
 
 const TradingCenter = () => {
     const { connectionStatus } = useApiBase();
-    const [symbol, setSymbol] = useState('R_100');
+    const [symbol, setSymbol] = useState('R_25');
     const [ticks, setTicks] = useState<TickPoint[]>([]);
     const [streamState, setStreamState] = useState<'waiting' | 'connecting' | 'live' | 'offline' | 'error'>('waiting');
     const [lastError, setLastError] = useState('');
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [stake, setStake] = useState('1.00');
+    const [targetProfit, setTargetProfit] = useState('5.00');
+    const [stopLoss, setStopLoss] = useState('5.00');
+    const [martingale, setMartingale] = useState('2.00');
+    const [tickWindow, setTickWindow] = useState(100);
 
+    // One Deriv subscription feeds both the digit stream and the live chart.
     useEffect(() => {
         const api = api_base.api;
         const symbolPrecision = Number(api_base.pip_sizes?.[symbol] ?? 2);
@@ -47,27 +54,23 @@ const TradingCenter = () => {
 
         const listener = api.onMessage().subscribe(({ data }: { data: any }) => {
             if (!active || !data) return;
-
             if (data.error) {
                 setLastError(data.error.message || 'Unable to load live ticks.');
                 setStreamState('error');
                 return;
             }
-
             if (data.msg_type === 'history' && data.history) {
                 const prices: number[] = data.history.prices || [];
                 const times: number[] = data.history.times || [];
                 const precision = Number(data.pip_size ?? symbolPrecision);
-                const history = prices.map((quote, index) => ({
+                setTicks(prices.map((quote, index) => ({
                     quote: Number(quote),
                     epoch: Number(times[index] || 0),
                     digit: getLastDigit(Number(quote), precision),
-                })).slice(-100);
-                setTicks(history);
+                })).slice(-100));
                 if (data.subscription?.id) subscriptionId = data.subscription.id;
                 setStreamState('live');
             }
-
             if (data.msg_type === 'tick' && data.tick?.symbol === symbol) {
                 const tick = data.tick;
                 const quote = Number(tick.quote);
@@ -78,13 +81,7 @@ const TradingCenter = () => {
             }
         });
 
-        api.send({
-            ticks_history: symbol,
-            count: 100,
-            end: 'latest',
-            style: 'ticks',
-            subscribe: 1,
-        }).then((response: any) => {
+        api.send({ ticks_history: symbol, count: 100, end: 'latest', style: 'ticks', subscribe: 1 }).then((response: any) => {
             if (response?.subscription?.id) subscriptionId = response.subscription.id;
             if (!active) {
                 if (subscriptionId) api.send({ forget: subscriptionId }).catch(() => undefined);
@@ -98,12 +95,11 @@ const TradingCenter = () => {
             if (response?.history) {
                 const prices: number[] = response.history.prices || [];
                 const times: number[] = response.history.times || [];
-                const history = prices.map((quote, index) => ({
+                setTicks(prices.map((quote, index) => ({
                     quote: Number(quote),
                     epoch: Number(times[index] || 0),
                     digit: getLastDigit(Number(quote), symbolPrecision),
-                })).slice(-100);
-                setTicks(history);
+                })).slice(-100));
                 setStreamState('live');
             }
         }).catch((error: Error) => {
@@ -115,108 +111,119 @@ const TradingCenter = () => {
         return () => {
             active = false;
             listener.unsubscribe();
-            if (subscriptionId) {
-                api.send({ forget: subscriptionId }).catch(() => undefined);
-            }
+            if (subscriptionId) api.send({ forget: subscriptionId }).catch(() => undefined);
         };
     }, [connectionStatus, symbol]);
 
     const stats = useMemo(() => {
-        const even = ticks.filter(tick => tick.digit % 2 === 0).length;
-        const odd = ticks.length - even;
+        const sample = ticks.slice(-tickWindow);
+        const even = sample.filter(tick => tick.digit % 2 === 0).length;
+        const odd = sample.length - even;
         return {
             even,
             odd,
-            evenPercent: ticks.length ? (even / ticks.length) * 100 : 0,
-            oddPercent: ticks.length ? (odd / ticks.length) * 100 : 0,
+            count: sample.length,
+            evenPercent: sample.length ? (even / sample.length) * 100 : 0,
+            oddPercent: sample.length ? (odd / sample.length) * 100 : 0,
         };
-    }, [ticks]);
+    }, [ticks, tickWindow]);
 
     const latest = ticks[ticks.length - 1];
-    const signal = ticks.length < 20
+    const signal = stats.count < 20
         ? 'Collecting data'
         : stats.evenPercent > stats.oddPercent
           ? 'Even currently leads'
           : stats.oddPercent > stats.evenPercent
             ? 'Odd currently leads'
             : 'Even / Odd balanced';
+    const recentTicks = ticks.slice(-36).reverse();
+
+    const resetSettings = () => {
+        setStake('1.00');
+        setTargetProfit('5.00');
+        setStopLoss('5.00');
+        setMartingale('2.00');
+    };
 
     return (
         <section className='trading-center'>
-            <header className='trading-center__header'>
-                <div>
-                    <p className='trading-center__eyebrow'>ODITRADERS.COM · STRATEGY MONITOR</p>
-                    <h1>Trading Center</h1>
-                    <p className='trading-center__subtitle'>Live Even / Odd market observation</p>
-                </div>
-                <span className={`trading-center__status trading-center__status--${streamState}`}>
-                    <span /> {streamState === 'live' ? 'LIVE TICKS' : streamState.toUpperCase()}
-                </span>
+            <header className='tc-heading'>
+                <div className='tc-heading__brand'><span className='tc-brand-mark'>◎</span><div><h1>ODITRADERS.COM</h1><p>TRADING CENTER <b>•</b> EVEN / ODD</p></div></div>
+                <span className={'tc-live tc-live--' + streamState}><i />{streamState === 'live' ? 'LIVE TICKS' : streamState.toUpperCase()}</span>
             </header>
 
-            <div className='trading-center__notice'>
-                <strong>OBSERVATION MODE</strong>
-                <span>Signals only. Automatic trading and contract purchases are disabled.</span>
+            <section className='tc-panel tc-market-panel'>
+                <div className='tc-market-controls'>
+                    <label className='tc-symbol'><span>◈</span><select aria-label='Market symbol' value={symbol} onChange={event => setSymbol(event.target.value)}>{SYMBOLS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+                    <label className='tc-window'><span className='tc-sr-only'>Tick sample size</span><select value={tickWindow} onChange={event => setTickWindow(Number(event.target.value))}><option value={60}>60</option><option value={100}>100</option></select></label>
+                    <div className='tc-window-buttons'>{[30, 60, 120, 1000].map(value => <button type='button' key={value} className={tickWindow === value ? 'active' : ''} onClick={() => setTickWindow(value)}>{value}</button>)}</div>
+                    <div className='tc-ratio'><div className='tc-ratio__even'>Even: <strong>{stats.evenPercent.toFixed(2)}%</strong></div><div className='tc-ratio__odd'>Odd: <strong>{stats.oddPercent.toFixed(2)}%</strong></div></div>
+                </div>
+                <div className='tc-digit-stream' aria-label='Live last digit stream'>
+                    {recentTicks.map((tick, index) => <span key={tick.epoch + '-' + index} className={tick.digit % 2 === 0 ? 'even' : 'odd'} title={'Quote: ' + tick.quote}>{tick.digit}</span>)}
+                    {!recentTicks.length && <span className='tc-empty-inline'>Waiting for live digits…</span>}
+                </div>
+                <div className='tc-stream-footer'><span className={'tc-stream-dot tc-stream-dot--' + streamState} />{streamState === 'live' ? 'Receiving live market ticks' : streamState === 'offline' ? 'Connect Deriv to receive live ticks' : streamState === 'error' ? lastError : 'Connecting to market…'}<small>{stats.count} / {tickWindow} sampled</small></div>
+            </section>
+
+            {lastError && <div className='tc-error'>{lastError}</div>}
+
+            <section className='tc-panel tc-chart-panel'>
+                <div className='tc-latest-price'>Latest Price: <strong>{latest ? latest.quote : '—'}</strong></div>
+                <div className='tc-chart-legend'><span /> Percentage</div>
+                <div className='tc-chart' role='img' aria-label={'Even ' + stats.evenPercent.toFixed(2) + ' percent, Odd ' + stats.oddPercent.toFixed(2) + ' percent'}>
+                    <div className='tc-y-axis'>{[100, 80, 60, 40, 20, 0].map(value => <span key={value}>{value}</span>)}</div>
+                    <div className='tc-chart-plot'>
+                        <div className='tc-chart-grid'>{[100, 80, 60, 40, 20, 0].map(value => <i key={value} />)}</div>
+                        <div className='tc-chart-bars'>
+                            <div className='tc-chart-bar tc-chart-bar--even' style={{ height: Math.max(stats.evenPercent, 0.8) + '%' }}><strong>{stats.evenPercent.toFixed(2)}%</strong></div>
+                            <div className='tc-chart-bar tc-chart-bar--odd' style={{ height: Math.max(stats.oddPercent, 0.8) + '%' }}><strong>{stats.oddPercent.toFixed(2)}%</strong></div>
+                        </div>
+                    </div>
+                    <div className='tc-chart-x-labels'><span>Even</span><span>Odd</span></div>
+                </div>
+                <div className='tc-chart-footnote'>Calculated from the latest {tickWindow} available ticks. Frequencies are descriptive, not predictions.</div>
+            </section>
+
+            <div className='tc-performance-grid'>
+                <article className='tc-panel tc-stat-panel'><small>BALANCE</small><strong>— USD</strong></article>
+                <article className='tc-panel tc-stat-panel'><small>TRADES TAKEN</small><strong>0</strong></article>
+                <article className='tc-panel tc-stat-panel tc-stat-panel--money'><small>PROFIT / LOSS</small><strong>$0.00</strong></article>
             </div>
 
-            <div className='trading-center__toolbar'>
-                <label htmlFor='trading-center-symbol'>Market</label>
-                <select id='trading-center-symbol' value={symbol} onChange={event => setSymbol(event.target.value)}>
-                    {SYMBOLS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
-                </select>
-                <span className='trading-center__tick-count'>{ticks.length} / 100 ticks</span>
+            <div className='tc-summary-grid'>
+                <article className='tc-panel tc-summary-label'>ⓘ &nbsp; SUMMARY</article>
+                <article className='tc-panel tc-summary-even'>EVEN: {stats.evenPercent.toFixed(2)}%</article>
+                <article className='tc-panel tc-summary-odd'>ODD: {stats.oddPercent.toFixed(2)}%</article>
             </div>
+            <div className='tc-signal-note'>{signal} · Based on observed tick frequency</div>
 
-            {lastError && <div className='trading-center__error'>{lastError}</div>}
-            {streamState === 'offline' && (
-                <div className='trading-center__offline'>Connect your Deriv account to start the live tick monitor.</div>
+            <div className='tc-actions-grid'>
+                <button type='button' className='tc-panel tc-action tc-action--settings' onClick={() => setSettingsOpen(true)}>☷ <span>Settings</span></button>
+                <button type='button' className='tc-panel tc-action tc-action--load' disabled>⇩ <span>Load Symbol</span></button>
+            </div>
+            <div className='tc-start-row'><button type='button' className='tc-start-button' disabled>START TRADES</button><small>Trading execution will be connected in Phase 2</small></div>
+
+            <section className='tc-panel tc-history-panel'>
+                <div className='tc-history-columns'><span>PROFIT</span><span>STATUS</span><span>CONTRACT TYPE</span><span>STAKE</span><span>EXIT SPOT</span></div>
+                <div className='tc-history-body'><div className='tc-history-title'>TRADE HISTORY <span>VIEW ALL</span></div><div className='tc-history-empty'><strong>No trades yet</strong><p>Trade history will appear here after execution is enabled.</p></div><button type='button' className='tc-history-menu' aria-label='Trade history menu' disabled>☰</button></div>
+            </section>
+
+            {settingsOpen && (
+                <div className='tc-modal-backdrop' role='presentation' onMouseDown={event => { if (event.target === event.currentTarget) setSettingsOpen(false); }}>
+                    <section className='tc-settings-modal' role='dialog' aria-modal='true' aria-labelledby='tc-settings-title'>
+                        <header className='tc-settings-heading'><h2 id='tc-settings-title'>⚙ Settings</h2><button type='button' aria-label='Close settings' onClick={() => setSettingsOpen(false)}>×</button></header>
+                        <div className='tc-settings-grid'>
+                            <label className='tc-setting-field'><span>Stake</span><small>Trade amount (USD)</small><input type='number' min='0.35' step='0.01' value={stake} onChange={event => setStake(event.target.value)} /></label>
+                            <label className='tc-setting-field'><span>Target Profit</span><small>Stop when profit reaches</small><input type='number' min='0' step='0.01' value={targetProfit} onChange={event => setTargetProfit(event.target.value)} /></label>
+                            <label className='tc-setting-field'><span>Stop Loss</span><small>Stop when loss reaches</small><input type='number' min='0' step='0.01' value={stopLoss} onChange={event => setStopLoss(event.target.value)} /></label>
+                            <label className='tc-setting-field'><span>Martingale</span><small>Multiplier after a loss</small><input type='number' min='1' step='0.1' value={martingale} onChange={event => setMartingale(event.target.value)} /></label>
+                        </div>
+                        <footer className='tc-settings-actions'><button type='button' className='tc-reset-button' onClick={resetSettings}>RESET</button><button type='button' className='tc-apply-button' onClick={() => setSettingsOpen(false)}>APPLY SETTINGS</button></footer>
+                        <p className='tc-settings-note'>Visual setup only. These values will connect to trade controls in Phase 2.</p>
+                    </section>
+                </div>
             )}
-
-            <div className='trading-center__metrics'>
-                <article className='trading-center__metric'>
-                    <span>Latest quote</span>
-                    <strong>{latest ? latest.quote : '—'}</strong>
-                    <small>{latest ? `Last digit: ${latest.digit}` : 'Waiting for first tick'}</small>
-                </article>
-                <article className='trading-center__metric trading-center__metric--even'>
-                    <span>Even digits</span>
-                    <strong>{stats.evenPercent.toFixed(1)}%</strong>
-                    <small>{stats.even} of {ticks.length} observed ticks</small>
-                </article>
-                <article className='trading-center__metric trading-center__metric--odd'>
-                    <span>Odd digits</span>
-                    <strong>{stats.oddPercent.toFixed(1)}%</strong>
-                    <small>{stats.odd} of {ticks.length} observed ticks</small>
-                </article>
-            </div>
-
-            <article className='trading-center__panel'>
-                <div className='trading-center__panel-heading'>
-                    <div><span>STRATEGY SIGNAL</span><h2>{signal}</h2></div>
-                    <span className='trading-center__signal-tag'>ESTIMATED · NOT A GUARANTEE</span>
-                </div>
-                <div className='trading-center__bar'>
-                    <div className='trading-center__bar-even' style={{ width: `${stats.evenPercent}%` }} />
-                    <div className='trading-center__bar-odd' style={{ width: `${stats.oddPercent}%` }} />
-                </div>
-                <div className='trading-center__bar-labels'><span>Even {stats.evenPercent.toFixed(1)}%</span><span>Odd {stats.oddPercent.toFixed(1)}%</span></div>
-                <p className='trading-center__disclaimer'>Percentages describe only the latest 100 received ticks. Past digit frequency does not predict the next tick or guarantee a profitable outcome.</p>
-            </article>
-
-            <article className='trading-center__panel'>
-                <div className='trading-center__panel-heading'>
-                    <div><span>LAST DIGITS</span><h2>Recent tick stream</h2></div>
-                    <span className='trading-center__tick-count'>Newest first</span>
-                </div>
-                <div className='trading-center__digits'>
-                    {[...ticks].slice(-24).reverse().map((tick, index) => (
-                        <span key={`${tick.epoch}-${index}`} className={tick.digit % 2 === 0 ? 'is-even' : 'is-odd'} title={String(tick.quote)}>
-                            {tick.digit}
-                        </span>
-                    ))}
-                    {!ticks.length && <p>Waiting for live tick data…</p>}
-                </div>
-            </article>
         </section>
     );
 };
