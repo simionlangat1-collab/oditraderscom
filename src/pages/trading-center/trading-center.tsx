@@ -63,7 +63,8 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const soundPlayingRef = useRef(false);
     const [soundEnabled, setSoundEnabled] = useState(true);
 
-    const playNextTradeSound = () => {
+    const playNextTradeSoundRef = useRef<() => void>(() => undefined);
+    playNextTradeSoundRef.current = () => {
         const context = audioContextRef.current;
         if (!context || context.state !== 'running' || soundPlayingRef.current || soundQueueRef.current.length === 0) return;
         const result = soundQueueRef.current.shift();
@@ -80,7 +81,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         gain.connect(context.destination);
         oscillator.onended = () => {
             soundPlayingRef.current = false;
-            playNextTradeSound();
+            playNextTradeSoundRef.current();
         };
         oscillator.start();
         oscillator.stop(context.currentTime + 0.3);
@@ -106,7 +107,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             setLatestTradeResult({ profit, status });
             if (soundEnabledRef.current) {
                 soundQueueRef.current.push(status);
-                playNextTradeSound();
+                playNextTradeSoundRef.current();
             }
             nextStakeRef.current = profit < 0 ? Number((nextStakeRef.current * appliedSettings.martingale).toFixed(2)) : appliedSettings.stake;
             const targetReached = appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit;
