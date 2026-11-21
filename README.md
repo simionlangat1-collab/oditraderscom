@@ -106,3 +106,6 @@ not Next.js config:
 
 When assembled by the App Builder, these are configured for you (logo upload, color,
 font, and app name are injected at deploy time).
+
+
+<!-- Cloudflare deployment connection test -->
