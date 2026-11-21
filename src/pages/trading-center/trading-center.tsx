@@ -37,7 +37,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const [martingale, setMartingale] = useState('2.00');
     const [appliedSettings, setAppliedSettings] = useState({ stake: 1, targetProfit: 5, stopLoss: 5, martingale: 2 });
     const [settingsError, setSettingsError] = useState('');
-    const [tickWindow, setTickWindow] = useState(100);
+    const [tickWindow, setTickWindow] = useState(30);
 
     // One Deriv subscription feeds both the digit stream and the live chart.
     useEffect(() => {
@@ -69,7 +69,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                     quote: Number(quote),
                     epoch: Number(times[index] || 0),
                     digit: getLastDigit(Number(quote), precision),
-                })).slice(-100));
+                })).slice(-1000));
                 if (data.subscription?.id) subscriptionId = data.subscription.id;
                 setStreamState('live');
             }
@@ -78,12 +78,12 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 const quote = Number(tick.quote);
                 const digit = getLastDigit(quote, Number(tick.pip_size ?? symbolPrecision));
                 if (tick.id) subscriptionId = tick.id;
-                setTicks(previous => [...previous, { quote, epoch: Number(tick.epoch), digit }].slice(-100));
+                setTicks(previous => [...previous, { quote, epoch: Number(tick.epoch), digit }].slice(-1000));
                 setStreamState('live');
             }
         });
 
-        api.send({ ticks_history: symbol, count: 100, end: 'latest', style: 'ticks', subscribe: 1 }).then((response: any) => {
+        api.send({ ticks_history: symbol, count: 1000, end: 'latest', style: 'ticks', subscribe: 1 }).then((response: any) => {
             if (response?.subscription?.id) subscriptionId = response.subscription.id;
             if (!active) {
                 if (subscriptionId) api.send({ forget: subscriptionId }).catch(() => undefined);
@@ -101,7 +101,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                     quote: Number(quote),
                     epoch: Number(times[index] || 0),
                     digit: getLastDigit(Number(quote), symbolPrecision),
-                })).slice(-100));
+                })).slice(-1000));
                 setStreamState('live');
             }
         }).catch((error: Error) => {
@@ -189,7 +189,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             <section className='tc-panel tc-market-panel'>
                 <div className='tc-market-controls'>
                     <label className='tc-symbol'><span>◈</span><select aria-label='Market symbol' value={symbol} onChange={event => setSymbol(event.target.value)}>{SYMBOLS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-                    <label className='tc-window'><span className='tc-sr-only'>Tick sample size</span><select value={tickWindow} onChange={event => setTickWindow(Number(event.target.value))}><option value={60}>60</option><option value={100}>100</option></select></label>
+                    <div className='tc-window' aria-live='polite'><span className='tc-sr-only'>Selected analysis window</span><strong>{tickWindow}</strong></div>
                     <div className='tc-window-buttons'>{[30, 60, 120, 1000].map(value => <button type='button' key={value} className={tickWindow === value ? 'active' : ''} onClick={() => setTickWindow(value)}>{value}</button>)}</div>
                 </div>
                 <div className='tc-digit-stream' aria-label='Live last digit stream'>
