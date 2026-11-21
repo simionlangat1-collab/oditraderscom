@@ -57,7 +57,34 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const nextStakeRef = useRef(1);
     const tradingRef = useRef(false);
     const targetProfitPopupShownRef = useRef(false);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const soundEnabledRef = useRef(true);
+    const soundQueueRef = useRef<Array<'WON' | 'LOST'>>([]);
+    const soundPlayingRef = useRef(false);
+    const [soundEnabled, setSoundEnabled] = useState(true);
 
+    const playNextTradeSound = () => {
+        const context = audioContextRef.current;
+        if (!context || context.state !== 'running' || soundPlayingRef.current || soundQueueRef.current.length === 0) return;
+        const result = soundQueueRef.current.shift();
+        if (!result) return;
+        soundPlayingRef.current = true;
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(result === 'WON' ? 880 : 220, context.currentTime);
+        gain.gain.setValueAtTime(0.0001, context.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.28);
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.onended = () => {
+            soundPlayingRef.current = false;
+            playNextTradeSound();
+        };
+        oscillator.start();
+        oscillator.stop(context.currentTime + 0.3);
+    };
 
     useEffect(() => {
         const api = api_base.api;
@@ -77,6 +104,10 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             const status = profit > 0 ? 'WON' : 'LOST';
             setTradeHistory(rows => rows.map(row => row.id === tradeId ? { ...row, profit, status, exitSpot: Number(contract.exit_tick) } : row));
             setLatestTradeResult({ profit, status });
+            if (soundEnabledRef.current) {
+                soundQueueRef.current.push(status);
+                playNextTradeSound();
+            }
             nextStakeRef.current = profit < 0 ? Number((nextStakeRef.current * appliedSettings.martingale).toFixed(2)) : appliedSettings.stake;
             const targetReached = appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit;
             const stopLossReached = appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss;
@@ -118,6 +149,11 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             setExecutionMessage('Select EVEN or ODD first.');
             return;
         }
+        const AudioContextConstructor = window.AudioContext || (window as any).webkitAudioContext;
+        if (!audioContextRef.current && AudioContextConstructor) {
+            audioContextRef.current = new AudioContextConstructor();
+        }
+        void audioContextRef.current?.resume();
         contractMap.current.clear();
         sessionProfitRef.current = 0;
         nextStakeRef.current = appliedSettings.stake;
@@ -450,7 +486,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 </article>
             </div>
             <div className='tc-signal-note' role='status'>{executionMessage} · {tradeCount} trades sent</div>
-            <div className='tc-signal-note'>ACTIVE SETTINGS · Stake ${appliedSettings.stake.toFixed(2)} · Target ${appliedSettings.targetProfit.toFixed(2)}{appliedSettings.targetProfit === 0 ? ' (OFF)' : ''} · Stop Loss ${appliedSettings.stopLoss.toFixed(2)}{appliedSettings.stopLoss === 0 ? ' (OFF)' : ''} · Martingale ×{appliedSettings.martingale.toFixed(2)}</div>
+            <div className='tc-signal-note'>ACTIVE SETTINGS · Result sounds {soundEnabled ? 'ON' : 'OFF'} · Stake ${appliedSettings.stake.toFixed(2)} · Target ${appliedSettings.targetProfit.toFixed(2)}{appliedSettings.targetProfit === 0 ? ' (OFF)' : ''} · Stop Loss ${appliedSettings.stopLoss.toFixed(2)}{appliedSettings.stopLoss === 0 ? ' (OFF)' : ''} · Martingale ×{appliedSettings.martingale.toFixed(2)}</div>
 
             <section className='tc-panel tc-history-panel'>
                 <div className='tc-history-columns'><span>PROFIT</span><span>STATUS</span><span>CONTRACT TYPE</span><span>STAKE</span><span>EXIT SPOT</span></div>
@@ -467,6 +503,19 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                             <label className='tc-setting-field'><span>Stop Loss</span><small>Stop when loss reaches</small><input type='number' min='0' step='0.01' value={stopLoss} onChange={event => setStopLoss(event.target.value)} /></label>
                             <label className='tc-setting-field'><span>Martingale</span><small>Multiplier after a loss</small><input type='number' min='1' step='0.1' value={martingale} onChange={event => setMartingale(event.target.value)} /></label>
                         </div>
+                        <label className='tc-sound-toggle'>
+                            <input
+                                type='checkbox'
+                                checked={soundEnabled}
+                                onChange={event => {
+                                    soundEnabledRef.current = event.target.checked;
+                                    setSoundEnabled(event.target.checked);
+                                    if (!event.target.checked) soundQueueRef.current = [];
+                                }}
+                            />
+                            <span><strong>Trade result sounds</strong><small>WIN: Ding · LOSS: Doo</small></span>
+                            <b>{soundEnabled ? 'ON' : 'OFF'}</b>
+                        </label>
                         {settingsError && <p className='tc-error' role='alert'>{settingsError}</p>}
                         <footer className='tc-settings-actions'><button type='button' className='tc-reset-button' onClick={resetSettings}>RESET</button><button type='button' className='tc-apply-button' onClick={applySettings}>APPLY SETTINGS</button></footer>
                         <p className='tc-settings-note'>Target Profit or Stop Loss set to 0 disables that limit. Stake must be at least 0.35; Martingale must be 1 or greater.</p>
