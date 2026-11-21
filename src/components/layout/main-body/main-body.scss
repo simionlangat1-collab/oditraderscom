@@ -2,10 +2,30 @@
     flex-grow: 1;
 }
 
-/* Keep the Trading Center inside the app shell while allowing its full content to scroll. */
-.main-body:has(.trading-center) {
-    min-height: 0;
-    overflow-y: auto;
+/*
+ * The Trading Center is a long page. Let the document grow naturally on
+ * mobile instead of trapping it inside the bot's fixed-height app shell.
+ */
+html:has(.trading-center),
+body:has(.trading-center),
+#root:has(.trading-center) {
+    height: auto;
+    min-height: 100%;
+}
+
+body:has(.trading-center) {
+    overflow-y: auto !important;
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
+}
+
+.layout:has(.trading-center) {
+    height: auto;
+    min-height: 100vh;
+}
+
+.main-body:has(.trading-center) {
+    flex: 1 0 auto;
+    min-height: auto;
+    overflow: visible;
 }
