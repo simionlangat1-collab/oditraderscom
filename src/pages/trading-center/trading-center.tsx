@@ -49,12 +49,14 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const [tradeCount, setTradeCount] = useState(0);
     const [tradeHistory, setTradeHistory] = useState<TradeRecord[]>([]);
     const [latestTradeResult, setLatestTradeResult] = useState<{ profit: number; status: 'WON' | 'LOST' } | null>(null);
+    const [targetProfitAchieved, setTargetProfitAchieved] = useState<number | null>(null);
     const [executionMessage, setExecutionMessage] = useState('Demo account required. Select EVEN or ODD to begin.');
     const contractMap = useRef(new Map<number, number>());
     const tradeSequence = useRef(0);
     const sessionProfitRef = useRef(0);
     const nextStakeRef = useRef(1);
     const tradingRef = useRef(false);
+    const targetProfitPopupShownRef = useRef(false);
 
 
     useEffect(() => {
@@ -76,11 +78,20 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             setTradeHistory(rows => rows.map(row => row.id === tradeId ? { ...row, profit, status, exitSpot: Number(contract.exit_tick) } : row));
             setLatestTradeResult({ profit, status });
             nextStakeRef.current = profit < 0 ? Number((nextStakeRef.current * appliedSettings.martingale).toFixed(2)) : appliedSettings.stake;
-            if ((appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit) ||
-                (appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss)) {
+            const targetReached = appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit;
+            const stopLossReached = appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss;
+            if (targetReached) {
+                if (!targetProfitPopupShownRef.current) {
+                    targetProfitPopupShownRef.current = true;
+                    setTargetProfitAchieved(sessionProfitRef.current);
+                }
                 tradingRef.current = false;
                 setIsTrading(false);
-                setExecutionMessage('Session limit reached. New purchases stopped; open contracts remain tracked.');
+                setExecutionMessage('Target Profit achieved. New trades stopped; open contracts remain monitored.');
+            } else if (stopLossReached) {
+                tradingRef.current = false;
+                setIsTrading(false);
+                setExecutionMessage('Stop Loss reached. New trades stopped; open contracts remain monitored.');
             }
         });
         return () => listener.unsubscribe();
@@ -114,6 +125,8 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         setTradeCount(0);
         setTradeHistory([]);
         setLatestTradeResult(null);
+        targetProfitPopupShownRef.current = false;
+        setTargetProfitAchieved(null);
         tradingRef.current = true;
         setIsTrading(true);
         setExecutionMessage('Demo trading active · one purchase cycle every second.');
@@ -457,6 +470,25 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                         {settingsError && <p className='tc-error' role='alert'>{settingsError}</p>}
                         <footer className='tc-settings-actions'><button type='button' className='tc-reset-button' onClick={resetSettings}>RESET</button><button type='button' className='tc-apply-button' onClick={applySettings}>APPLY SETTINGS</button></footer>
                         <p className='tc-settings-note'>Target Profit or Stop Loss set to 0 disables that limit. Stake must be at least 0.35; Martingale must be 1 or greater.</p>
+                    </section>
+                </div>
+            )}
+
+            {targetProfitAchieved !== null && (
+                <div className='tc-target-backdrop' role='presentation' onMouseDown={event => { if (event.target === event.currentTarget) setTargetProfitAchieved(null); }}>
+                    <section className='tc-target-modal' role='dialog' aria-modal='true' aria-labelledby='tc-target-title' aria-describedby='tc-target-description'>
+                        <button type='button' className='tc-target-close' aria-label='Close target profit notification' onClick={() => setTargetProfitAchieved(null)}>×</button>
+                        <div className='tc-target-confetti' aria-hidden='true'>✦　✧　✦　✧　✦</div>
+                        <div className='tc-target-trophy' aria-hidden='true'>🏆</div>
+                        <div className='tc-target-success'><span aria-hidden='true'>✓</span><h2 id='tc-target-title'>TARGET PROFIT <strong>ACHIEVED!</strong></h2></div>
+                        <div className='tc-target-amount'>
+                            <span>SESSION PROFIT</span>
+                            <strong>+{targetProfitAchieved.toFixed(2)} {accountCurrency}</strong>
+                            <small>Target: {appliedSettings.targetProfit.toFixed(2)} {accountCurrency}</small>
+                        </div>
+                        <p className='tc-target-message' id='tc-target-description'><span aria-hidden='true'>✓</span> New trades stopped automatically.</p>
+                        <p className='tc-target-submessage'>Any open contracts will continue to be monitored until settlement.</p>
+                        <button type='button' className='tc-target-acknowledge' onClick={() => setTargetProfitAchieved(null)}>👍 &nbsp; GREAT, GOT IT</button>
                     </section>
                 </div>
             )}
