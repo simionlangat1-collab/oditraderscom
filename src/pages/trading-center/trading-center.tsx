@@ -221,14 +221,12 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 const profitLimitReachedBeforeBuy = appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit;
                 const lossLimitReachedBeforeBuy = appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss;
                 if (profitLimitReachedBeforeBuy || lossLimitReachedBeforeBuy) {
-                    if (profitLimitReachedBeforeBuy || lossLimitReachedBeforeBuy) {
-                        targetStopTriggeredRef.current = true;
-                        tradingRef.current = false;
-                        setIsTrading(false);
-                        setExecutionMessage(profitLimitReachedBeforeBuy
-                            ? 'Target Profit reached. No further purchases will be sent.'
-                            : 'Stop Loss reached. No further purchases will be sent.');
-                    }
+                    targetStopTriggeredRef.current = true;
+                    tradingRef.current = false;
+                    setIsTrading(false);
+                    setExecutionMessage(profitLimitReachedBeforeBuy
+                        ? 'Target Profit reached. No further purchases will be sent.'
+                        : 'Stop Loss reached. No further purchases will be sent.');
                     return;
                 }
 
