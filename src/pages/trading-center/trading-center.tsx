@@ -9,17 +9,13 @@ type TickPoint = { quote: number; epoch: number; digit: number };
 type TradeRecord = { id: number; contractId: number; contractType: 'DIGITEVEN' | 'DIGITODD'; stake: number; profit: number; status: 'OPEN' | 'WON' | 'LOST'; exitSpot?: number };
 
 const SYMBOLS = [
-    { value: 'R_10', label: 'Volatility 10 Index' },
-    { value: 'R_25', label: 'Volatility 25 Index' },
-    { value: 'R_50', label: 'Volatility 50 Index' },
-    { value: 'R_75', label: 'Volatility 75 Index' },
-    { value: 'R_100', label: 'Volatility 100 Index' },
-    { value: '1HZ10V', label: 'Volatility 10 (1s) Index' },
     { value: '1HZ25V', label: 'Volatility 25 (1s) Index' },
     { value: '1HZ50V', label: 'Volatility 50 (1s) Index' },
     { value: '1HZ75V', label: 'Volatility 75 (1s) Index' },
     { value: '1HZ100V', label: 'Volatility 100 (1s) Index' },
 ];
+
+const MAX_PENDING_PURCHASES = 3;
 
 const getLastDigit = (quote: number, precision = 2) => {
     const formatted = Number(quote).toFixed(Math.max(0, Math.min(8, precision)));
@@ -31,7 +27,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const [accountBalance, setAccountBalance] = useState<number | null>(null);
     const [accountCurrency, setAccountCurrency] = useState('USD');
     const [isDemoAccountState, setIsDemoAccountState] = useState<boolean | null>(null);
-    const [symbol, setSymbol] = useState('R_25');
+    const [symbol, setSymbol] = useState('1HZ25V');
     const [ticks, setTicks] = useState<TickPoint[]>([]);
     const [streamState, setStreamState] = useState<'waiting' | 'connecting' | 'live' | 'offline' | 'error'>('waiting');
     const [lastError, setLastError] = useState('');
@@ -56,7 +52,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const sessionProfitRef = useRef(0);
     const nextStakeRef = useRef(1);
     const tradingRef = useRef(false);
-    const purchaseInFlightRef = useRef(false);
+    const pendingPurchaseCountRef = useRef(0);
     const targetStopTriggeredRef = useRef(false);
     const targetProfitPopupShownRef = useRef(false);
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -146,6 +142,10 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             setExecutionMessage('DEMO ONLY: switch to a Demo account before starting.');
             return;
         }
+        if (contractMap.current.size > 0) {
+            setExecutionMessage('Wait for all existing contracts to settle before starting a new session.');
+            return;
+        }
         if (connectionStatus !== CONNECTION_STATUS.OPENED || streamState !== 'live' || ticks.length < 2) {
             setExecutionMessage('Wait for a connected account and live market ticks.');
             return;
@@ -159,7 +159,6 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             audioContextRef.current = new AudioContextConstructor();
         }
         void audioContextRef.current?.resume();
-        contractMap.current.clear();
         sessionProfitRef.current = 0;
         nextStakeRef.current = appliedSettings.stake;
         setSessionProfit(0);
@@ -178,7 +177,9 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         if (!isTrading) return undefined;
         let stopped = false;
         const placeTrade = async () => {
-            if (stopped || !tradingRef.current || targetStopTriggeredRef.current || purchaseInFlightRef.current) return;
+            if (stopped || !tradingRef.current || targetStopTriggeredRef.current) return;
+            // Bound outstanding proposal/buy cycles so a slow connection cannot build a delayed burst.
+            if (pendingPurchaseCountRef.current >= MAX_PENDING_PURCHASES) return;
 
             // Re-check the session limits at the point of execution, not only on settlement.
             const profitLimitReached = appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit;
@@ -192,9 +193,6 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                     : 'Stop Loss reached. Trading permanently stopped for this session.');
                 return;
             }
-
-            // Do not queue another purchase while any contract is unsettled.
-            if (contractMap.current.size > 0) return;
 
             const api = api_base.api;
             if (!isDemoAccount(activeLoginid) || !authData?.is_virtual) {
@@ -211,18 +209,18 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             }
             const contractType = selectedContract === 'EVEN' ? 'DIGITEVEN' : 'DIGITODD';
             const stakeAmount = Math.max(0.35, Number(nextStakeRef.current.toFixed(2)));
-            purchaseInFlightRef.current = true;
+            pendingPurchaseCountRef.current += 1;
             try {
                 const proposalResponse: any = await api.send({
                     proposal: 1, amount: stakeAmount, basis: 'stake', contract_type: contractType,
-                    currency: accountCurrency, duration: 1, duration_unit: 't', underlying_symbol: symbol,
+                    currency: accountCurrency, duration: 1, duration_unit: 's', underlying_symbol: symbol,
                 });
                 if (stopped || !tradingRef.current || targetStopTriggeredRef.current) return;
 
                 // Final hard gate: never send a buy after either session limit has been reached.
                 const profitLimitReachedBeforeBuy = appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit;
                 const lossLimitReachedBeforeBuy = appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss;
-                if (profitLimitReachedBeforeBuy || lossLimitReachedBeforeBuy || contractMap.current.size > 0) {
+                if (profitLimitReachedBeforeBuy || lossLimitReachedBeforeBuy) {
                     if (profitLimitReachedBeforeBuy || lossLimitReachedBeforeBuy) {
                         targetStopTriggeredRef.current = true;
                         tradingRef.current = false;
@@ -259,7 +257,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 setIsTrading(false);
                 setExecutionMessage(error?.message || 'Trade request failed. Trading stopped for safety.');
             } finally {
-                purchaseInFlightRef.current = false;
+                pendingPurchaseCountRef.current = Math.max(0, pendingPurchaseCountRef.current - 1);
             }
         };
         placeTrade();
