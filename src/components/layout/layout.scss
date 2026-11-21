@@ -18,3 +18,37 @@
         }
     }
 }
+
+
+/* Dedicated Trading Center presentation: hide the surrounding app chrome. */
+body.trading-center-fullscreen {
+    overflow: hidden !important;
+
+    .layout {
+        height: 100dvh !important;
+        min-height: 100dvh;
+        overflow: hidden;
+    }
+
+    .layout > .deriv-header,
+    .layout > footer {
+        display: none !important;
+    }
+
+    .main-body {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .main {
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+    }
+
+    .main .dc-tabs__list {
+        display: none !important;
+    }
+}
