@@ -81,7 +81,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             }
         });
         return () => listener.unsubscribe();
-    }, [appliedSettings]);
+    }, [appliedSettings, connectionStatus]);
 
     useEffect(() => {
         if (connectionStatus !== CONNECTION_STATUS.OPENED && tradingRef.current) {
@@ -410,7 +410,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
 
             <section className='tc-panel tc-history-panel'>
                 <div className='tc-history-columns'><span>PROFIT</span><span>STATUS</span><span>CONTRACT TYPE</span><span>STAKE</span><span>EXIT SPOT</span></div>
-                <div className='tc-history-body'><div className='tc-history-title'>TRADE HISTORY <span>VIEW ALL</span></div><div className='tc-history-empty'><strong>No trades yet</strong><p>Trade history will appear here after execution is enabled.</p></div><button type='button' className='tc-history-menu' aria-label='Trade history menu' disabled>☰</button></div>
+                <div className='tc-history-body'><div className='tc-history-title'>TRADE HISTORY <span>VIEW ALL</span></div><div className='tc-history-empty'>{tradeHistory.length === 0 ? <><strong>No trades yet</strong><p>Demo trade history will appear here after execution.</p></> : <div className='tc-trade-list'>{tradeHistory.map(item => <div className='tc-trade-row' key={item.id}><strong>{item.status === 'OPEN' ? '—' : (item.profit > 0 ? '+' : '') + item.profit.toFixed(2)}</strong><span>{item.status}</span><span>{item.contractType === 'DIGITEVEN' ? 'EVEN' : 'ODD'}</span><span>{item.stake.toFixed(2)}</span><span>{item.exitSpot ?? '—'}</span></div>)}</div>}</div><button type='button' className='tc-history-menu' aria-label='Trade history menu' disabled>☰</button></div>
             </section>
 
             {settingsOpen && (
