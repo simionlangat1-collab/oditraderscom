@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { isDemoAccount } from '@/utils/account-helpers';
 import { api_base } from '@/external/bot-skeleton';
 import { CONNECTION_STATUS } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { useApiBase } from '@/hooks/useApiBase';
 import './trading-center.scss';
 
 type TickPoint = { quote: number; epoch: number; digit: number };
+type TradeRecord = { id: number; contractId: number; contractType: 'DIGITEVEN' | 'DIGITODD'; stake: number; profit: number; status: 'OPEN' | 'WON' | 'LOST'; exitSpot?: number };
 
 const SYMBOLS = [
     { value: 'R_10', label: 'Volatility 10 Index' },
@@ -42,6 +44,120 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const [settingsError, setSettingsError] = useState('');
     const [tickWindow, setTickWindow] = useState(30);
     const [selectedContract, setSelectedContract] = useState<'EVEN' | 'ODD' | null>(null);
+    const [isTrading, setIsTrading] = useState(false);
+    const [sessionProfit, setSessionProfit] = useState(0);
+    const [tradeCount, setTradeCount] = useState(0);
+    const [tradeHistory, setTradeHistory] = useState<TradeRecord[]>([]);
+    const [executionMessage, setExecutionMessage] = useState('Demo account required. Select EVEN or ODD to begin.');
+    const contractMap = useRef(new Map<number, number>());
+    const tradeSequence = useRef(0);
+    const sessionProfitRef = useRef(0);
+    const nextStakeRef = useRef(1);
+    const tradingRef = useRef(false);
+
+
+    useEffect(() => {
+        const api = api_base.api;
+        if (!api) return undefined;
+        const listener = api.onMessage().subscribe(({ data }: { data: any }) => {
+            if (data?.msg_type !== 'proposal_open_contract') return;
+            const contract = data.proposal_open_contract;
+            if (!contract || !contract.is_sold) return;
+            const contractId = Number(contract.contract_id);
+            const tradeId = contractMap.current.get(contractId);
+            if (tradeId === undefined) return;
+            contractMap.current.delete(contractId);
+            const profit = Number((Number(contract.sell_price) - Number(contract.buy_price)).toFixed(2));
+            if (!Number.isFinite(profit)) return;
+            sessionProfitRef.current = Number((sessionProfitRef.current + profit).toFixed(2));
+            setSessionProfit(sessionProfitRef.current);
+            setTradeHistory(rows => rows.map(row => row.id === tradeId ? { ...row, profit, status: profit > 0 ? 'WON' : 'LOST', exitSpot: Number(contract.exit_tick) } : row));
+            nextStakeRef.current = profit < 0 ? Number((nextStakeRef.current * appliedSettings.martingale).toFixed(2)) : appliedSettings.stake;
+            if ((appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit) ||
+                (appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss)) {
+                tradingRef.current = false;
+                setIsTrading(false);
+                setExecutionMessage('Session limit reached. New purchases stopped; open contracts remain tracked.');
+            }
+        });
+        return () => listener.unsubscribe();
+    }, [appliedSettings]);
+
+    useEffect(() => {
+        if (connectionStatus !== CONNECTION_STATUS.OPENED && tradingRef.current) {
+            tradingRef.current = false;
+            setIsTrading(false);
+            setExecutionMessage('Connection lost. Trading stopped.');
+        }
+    }, [connectionStatus]);
+
+    const startTrading = () => {
+        if (!isDemoAccount(activeLoginid) || !authData?.is_virtual) {
+            setExecutionMessage('DEMO ONLY: switch to a Demo account before starting.');
+            return;
+        }
+        if (connectionStatus !== CONNECTION_STATUS.OPENED || streamState !== 'live' || ticks.length < 2) {
+            setExecutionMessage('Wait for a connected account and live market ticks.');
+            return;
+        }
+        if (!selectedContract) {
+            setExecutionMessage('Select EVEN or ODD first.');
+            return;
+        }
+        contractMap.current.clear();
+        sessionProfitRef.current = 0;
+        nextStakeRef.current = appliedSettings.stake;
+        setSessionProfit(0);
+        setTradeCount(0);
+        setTradeHistory([]);
+        tradingRef.current = true;
+        setIsTrading(true);
+        setExecutionMessage('Demo trading active · one purchase cycle every second.');
+    };
+
+    useEffect(() => {
+        if (!isTrading) return undefined;
+        let stopped = false;
+        const placeTrade = async () => {
+            if (stopped || !tradingRef.current) return;
+            const api = api_base.api;
+            if (!api || api.connection.readyState !== 1) {
+                tradingRef.current = false;
+                setIsTrading(false);
+                setExecutionMessage('Deriv connection unavailable. Trading stopped.');
+                return;
+            }
+            const contractType = selectedContract === 'EVEN' ? 'DIGITEVEN' : 'DIGITODD';
+            const stakeAmount = Math.max(0.35, Number(nextStakeRef.current.toFixed(2)));
+            try {
+                const proposalResponse: any = await api.send({
+                    proposal: 1, amount: stakeAmount, basis: 'stake', contract_type: contractType,
+                    currency: accountCurrency, duration: 1, duration_unit: 't', underlying_symbol: symbol,
+                });
+                if (stopped || !tradingRef.current) return;
+                if (proposalResponse?.error || !proposalResponse?.proposal?.id) {
+                    throw new Error(proposalResponse?.error?.message || 'No valid proposal returned by Deriv.');
+                }
+                const buyResponse: any = await api.send({ buy: proposalResponse.proposal.id, price: Number(proposalResponse.proposal.ask_price) });
+                if (stopped || !tradingRef.current) return;
+                if (buyResponse?.error || !buyResponse?.buy?.contract_id) {
+                    throw new Error(buyResponse?.error?.message || 'Deriv did not confirm the purchase.');
+                }
+                const buy = buyResponse.buy;
+                const id = ++tradeSequence.current;
+                contractMap.current.set(Number(buy.contract_id), id);
+                setTradeCount(count => count + 1);
+                setTradeHistory(rows => [{ id, contractId: Number(buy.contract_id), contractType, stake: Number(buy.buy_price ?? stakeAmount), profit: 0, status: 'OPEN' }, ...rows].slice(0, 50));
+            } catch (error: any) {
+                tradingRef.current = false;
+                setIsTrading(false);
+                setExecutionMessage(error?.message || 'Trade request failed. Trading stopped for safety.');
+            }
+        };
+        placeTrade();
+        const interval = window.setInterval(placeTrade, 1000);
+        return () => { stopped = true; window.clearInterval(interval); };
+    }, [isTrading, selectedContract, symbol, accountCurrency]);
 
     // Keep the displayed account balance aligned with the currently authorized account.
     useEffect(() => {
@@ -250,8 +366,8 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
 
             <div className='tc-performance-grid'>
                 <article className='tc-panel tc-stat-panel'><small>{isDemoAccount === null ? 'BALANCE' : isDemoAccount ? 'D. Bal =' : 'R. Bal ='}</small><strong>{accountBalance === null || !Number.isFinite(accountBalance) ? '—' : accountBalance.toFixed(2)} {accountCurrency}</strong></article>
-                <article className='tc-panel tc-stat-panel tc-stat-panel--start'><small>START TRADES</small></article>
-                <article className='tc-panel tc-stat-panel tc-stat-panel--money'><small>PROFIT / LOSS</small><strong>$0.00</strong></article>
+                <button type='button' className='tc-panel tc-stat-panel tc-stat-panel--start tc-start-button' onClick={isTrading ? () => { tradingRef.current = false; setIsTrading(false); setExecutionMessage('Trading stopped. Existing contracts remain tracked.'); } : startTrading}>{isTrading ? 'STOP TRADES' : 'START TRADES'}<small>{isTrading ? 'RUNNING · 1s CYCLE' : 'DEMO ONLY'}</small></button>
+                <article className='tc-panel tc-stat-panel tc-stat-panel--money'><small>PROFIT / LOSS</small><strong>{sessionProfit >= 0 ? '+' : ''}{sessionProfit.toFixed(2)} {accountCurrency}</strong></article>
             </div>
 
             <div className='tc-summary-grid'>
@@ -289,6 +405,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 <button type='button' className='tc-panel tc-action tc-action--settings' onClick={() => { setSettingsError(''); setSettingsOpen(true); }}>☷ <span>Settings</span></button>
                 <button type='button' className='tc-panel tc-action tc-action--load' disabled>⇩ <span>Load Symbol</span></button>
             </div>
+            <div className='tc-signal-note' role='status'>{executionMessage} · {tradeCount} trades sent</div>
             <div className='tc-signal-note'>ACTIVE SETTINGS · Stake ${appliedSettings.stake.toFixed(2)} · Target ${appliedSettings.targetProfit.toFixed(2)}{appliedSettings.targetProfit === 0 ? ' (OFF)' : ''} · Stop Loss ${appliedSettings.stopLoss.toFixed(2)}{appliedSettings.stopLoss === 0 ? ' (OFF)' : ''} · Martingale ×{appliedSettings.martingale.toFixed(2)}</div>
 
             <section className='tc-panel tc-history-panel'>
