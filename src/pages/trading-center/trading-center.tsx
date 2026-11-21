@@ -33,6 +33,7 @@ const TradingCenter = () => {
 
     useEffect(() => {
         const api = api_base.api;
+        const symbolPrecision = Number(api_base.pip_sizes?.[symbol] ?? 2);
         if (connectionStatus !== CONNECTION_STATUS.OPENED || !api) {
             setStreamState('offline');
             return undefined;
@@ -56,7 +57,7 @@ const TradingCenter = () => {
             if (data.msg_type === 'history' && data.history) {
                 const prices: number[] = data.history.prices || [];
                 const times: number[] = data.history.times || [];
-                const precision = Number(data.pip_size ?? 2);
+                const precision = Number(data.pip_size ?? symbolPrecision);
                 const history = prices.map((quote, index) => ({
                     quote: Number(quote),
                     epoch: Number(times[index] || 0),
@@ -70,7 +71,7 @@ const TradingCenter = () => {
             if (data.msg_type === 'tick' && data.tick?.symbol === symbol) {
                 const tick = data.tick;
                 const quote = Number(tick.quote);
-                const digit = getLastDigit(quote, Number(tick.pip_size ?? 2));
+                const digit = getLastDigit(quote, Number(tick.pip_size ?? symbolPrecision));
                 if (tick.id) subscriptionId = tick.id;
                 setTicks(previous => [...previous, { quote, epoch: Number(tick.epoch), digit }].slice(-100));
                 setStreamState('live');
@@ -97,7 +98,7 @@ const TradingCenter = () => {
                 const history = prices.map((quote, index) => ({
                     quote: Number(quote),
                     epoch: Number(times[index] || 0),
-                    digit: getLastDigit(Number(quote), 2),
+                    digit: getLastDigit(Number(quote), symbolPrecision),
                 })).slice(-100);
                 setTicks(history);
                 setStreamState('live');
