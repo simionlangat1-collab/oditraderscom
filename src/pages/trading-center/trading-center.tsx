@@ -221,7 +221,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
 
             <div className='tc-performance-grid'>
                 <article className='tc-panel tc-stat-panel'><small>BALANCE</small><strong>— USD</strong></article>
-                <article className='tc-panel tc-stat-panel'><small>START TRADES</small><strong>0</strong></article>
+                <article className='tc-panel tc-stat-panel tc-stat-panel--start'><small>START TRADES</small></article>
                 <article className='tc-panel tc-stat-panel tc-stat-panel--money'><small>PROFIT / LOSS</small><strong>$0.00</strong></article>
             </div>
 
