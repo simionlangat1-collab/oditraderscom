@@ -41,6 +41,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const [appliedSettings, setAppliedSettings] = useState({ stake: 1, targetProfit: 5, stopLoss: 5, martingale: 2 });
     const [settingsError, setSettingsError] = useState('');
     const [tickWindow, setTickWindow] = useState(30);
+    const [selectedContract, setSelectedContract] = useState<'EVEN' | 'ODD' | null>(null);
 
     // Keep the displayed account balance aligned with the currently authorized account.
     useEffect(() => {
@@ -255,8 +256,32 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
 
             <div className='tc-summary-grid'>
                 <article className='tc-panel tc-summary-label'>ⓘ &nbsp; SUMMARY</article>
-                <article className='tc-panel tc-summary-even'>EVEN: {stats.evenPercent.toFixed(2)}%</article>
-                <article className='tc-panel tc-summary-odd'>ODD: {stats.oddPercent.toFixed(2)}%</article>
+                <button
+                    type='button'
+                    className='tc-panel tc-summary-even'
+                    aria-pressed={selectedContract === 'EVEN'}
+                    onClick={() => setSelectedContract('EVEN')}
+                    style={{
+                        background: selectedContract === 'EVEN' ? 'linear-gradient(100deg, #078d6c, #1bd6a0)' : 'linear-gradient(135deg, rgba(13, 39, 57, .98), rgba(6, 21, 39, .98))',
+                        color: '#fff',
+                        borderColor: selectedContract === 'EVEN' ? '#1bd6a0' : 'var(--tc-border)',
+                        boxShadow: selectedContract === 'EVEN' ? '0 0 1rem rgba(27, 214, 160, .3)' : undefined,
+                        appearance: 'none',
+                    }}
+                >EVEN: {stats.evenPercent.toFixed(2)}%</button>
+                <button
+                    type='button'
+                    className='tc-panel tc-summary-odd'
+                    aria-pressed={selectedContract === 'ODD'}
+                    onClick={() => setSelectedContract('ODD')}
+                    style={{
+                        background: selectedContract === 'ODD' ? 'rgba(191, 61, 111, .58)' : 'linear-gradient(135deg, rgba(13, 39, 57, .98), rgba(6, 21, 39, .98))',
+                        color: selectedContract === 'ODD' ? '#fff' : '#e5f2fa',
+                        borderColor: selectedContract === 'ODD' ? '#e65a91' : 'var(--tc-border)',
+                        boxShadow: selectedContract === 'ODD' ? '0 0 1rem rgba(230, 90, 145, .3)' : undefined,
+                        appearance: 'none',
+                    }}
+                >ODD: {stats.oddPercent.toFixed(2)}%</button>
             </div>
             <div className='tc-signal-note'>{signal} · Based on observed tick frequency</div>
 
