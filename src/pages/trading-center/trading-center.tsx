@@ -221,7 +221,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
 
             <div className='tc-performance-grid'>
                 <article className='tc-panel tc-stat-panel'><small>BALANCE</small><strong>— USD</strong></article>
-                <article className='tc-panel tc-stat-panel'><small>TRADES TAKEN</small><strong>0</strong></article>
+                <article className='tc-panel tc-stat-panel'><small>START TRADES</small><strong>0</strong></article>
                 <article className='tc-panel tc-stat-panel tc-stat-panel--money'><small>PROFIT / LOSS</small><strong>$0.00</strong></article>
             </div>
 
@@ -237,7 +237,6 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 <button type='button' className='tc-panel tc-action tc-action--load' disabled>⇩ <span>Load Symbol</span></button>
             </div>
             <div className='tc-signal-note'>ACTIVE SETTINGS · Stake ${appliedSettings.stake.toFixed(2)} · Target ${appliedSettings.targetProfit.toFixed(2)}{appliedSettings.targetProfit === 0 ? ' (OFF)' : ''} · Stop Loss ${appliedSettings.stopLoss.toFixed(2)}{appliedSettings.stopLoss === 0 ? ' (OFF)' : ''} · Martingale ×{appliedSettings.martingale.toFixed(2)}</div>
-            <div className='tc-start-row'><button type='button' className='tc-start-button' disabled>START TRADES</button><small>Trading execution will be connected in Phase 2</small></div>
 
             <section className='tc-panel tc-history-panel'>
                 <div className='tc-history-columns'><span>PROFIT</span><span>STATUS</span><span>CONTRACT TYPE</span><span>STAKE</span><span>EXIT SPOT</span></div>
