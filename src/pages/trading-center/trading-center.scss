@@ -88,6 +88,8 @@
     .tc-stat-panel small { color: #d3e2ed; font-size: .95rem; font-weight: 900; }
     .tc-stat-panel strong { margin-top: .25rem; color: #f8fdff; font-size: clamp(1.15rem, 2vw, 1.8rem); white-space: nowrap; }
     .tc-stat-panel--money strong { font-size: clamp(1.4rem, 3vw, 2.4rem); letter-spacing: .04em; }
+    .tc-stat-panel--start { display: flex; align-items: center; justify-content: center; text-align: center; }
+    .tc-stat-panel--start small { font-size: 1.35rem; font-weight: 950; letter-spacing: .04em; }
     .tc-summary-grid { display: grid; grid-template-columns: 1fr 1.1fr 1.1fr; gap: .65rem; margin-bottom: .35rem; }
     .tc-summary-grid .tc-panel { display: grid; place-items: center; min-height: 3.8rem; padding: .55rem; font-size: 1rem; font-weight: 900; }
     .tc-summary-label { justify-content: start; border-left: 4px solid #e8a82c; }
