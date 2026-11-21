@@ -1,3 +1,11 @@
 .main-body {
     flex-grow: 1;
 }
+
+/* Keep the Trading Center inside the app shell while allowing its full content to scroll. */
+.main-body:has(.trading-center) {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+}
