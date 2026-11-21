@@ -3,29 +3,41 @@
 }
 
 /*
- * The Trading Center is a long page. Let the document grow naturally on
- * mobile instead of trapping it inside the bot's fixed-height app shell.
+ * Trading Center is a long, document-flow page. The standard bot shell uses
+ * fixed viewport heights, which can trap the page on mobile. Override every
+ * relevant ancestor only while Trading Center is mounted.
  */
 html:has(.trading-center),
 body:has(.trading-center),
 #root:has(.trading-center) {
-    height: auto;
+    height: auto !important;
     min-height: 100%;
+    overflow-y: auto !important;
 }
 
 body:has(.trading-center) {
-    overflow-y: auto !important;
-    overscroll-behavior-y: contain;
+    min-height: 100dvh;
+    overflow-x: hidden !important;
+    overscroll-behavior-y: auto;
     -webkit-overflow-scrolling: touch;
 }
 
+#root:has(.trading-center) {
+    min-height: 100dvh;
+    overflow: visible !important;
+}
+
 .layout:has(.trading-center) {
-    height: auto;
-    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    height: auto !important;
+    min-height: 100dvh;
+    overflow: visible !important;
 }
 
 .main-body:has(.trading-center) {
-    flex: 1 0 auto;
-    min-height: auto;
-    overflow: visible;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
 }
