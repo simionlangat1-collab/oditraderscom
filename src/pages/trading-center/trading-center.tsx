@@ -504,18 +504,22 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                             <label className='tc-setting-field'><span>Stop Loss</span><small>Stop when loss reaches</small><input type='number' min='0' step='0.01' value={stopLoss} onChange={event => setStopLoss(event.target.value)} /></label>
                             <label className='tc-setting-field'><span>Martingale</span><small>Multiplier after a loss</small><input type='number' min='1' step='0.1' value={martingale} onChange={event => setMartingale(event.target.value)} /></label>
                         </div>
-                        <label className='tc-sound-toggle'>
+                        <label
+                            className='tc-sound-toggle'
+                            style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1rem', padding: '1rem', border: '1px solid #118d73', borderRadius: '1rem', background: '#0b2035', color: '#f5fbff' }}
+                        >
                             <input
                                 type='checkbox'
                                 checked={soundEnabled}
+                                style={{ width: '1.25rem', height: '1.25rem', accentColor: '#1bd9a2' }}
                                 onChange={event => {
                                     soundEnabledRef.current = event.target.checked;
                                     setSoundEnabled(event.target.checked);
                                     if (!event.target.checked) soundQueueRef.current = [];
                                 }}
                             />
-                            <span><strong>Trade result sounds</strong><small>WIN: Ding · LOSS: Doo</small></span>
-                            <b>{soundEnabled ? 'ON' : 'OFF'}</b>
+                            <span style={{ display: 'flex', flexDirection: 'column', gap: '.2rem' }}><strong>Trade result sounds</strong><small style={{ color: '#91adbf' }}>WIN: Ding · LOSS: Doo</small></span>
+                            <b style={{ marginLeft: 'auto', color: soundEnabled ? '#1bd9a2' : '#91adbf' }}>{soundEnabled ? 'ON' : 'OFF'}</b>
                         </label>
                         {settingsError && <p className='tc-error' role='alert'>{settingsError}</p>}
                         <footer className='tc-settings-actions'><button type='button' className='tc-reset-button' onClick={resetSettings}>RESET</button><button type='button' className='tc-apply-button' onClick={applySettings}>APPLY SETTINGS</button></footer>
