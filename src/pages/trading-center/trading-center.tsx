@@ -25,7 +25,10 @@ const getLastDigit = (quote: number, precision = 2) => {
 };
 
 const TradingCenter = ({ onExit }: { onExit: () => void }) => {
-    const { connectionStatus } = useApiBase();
+    const { connectionStatus, authData, activeLoginid } = useApiBase();
+    const [accountBalance, setAccountBalance] = useState<number | null>(null);
+    const [accountCurrency, setAccountCurrency] = useState('USD');
+    const [isDemoAccount, setIsDemoAccount] = useState<boolean | null>(null);
     const [symbol, setSymbol] = useState('R_25');
     const [ticks, setTicks] = useState<TickPoint[]>([]);
     const [streamState, setStreamState] = useState<'waiting' | 'connecting' | 'live' | 'offline' | 'error'>('waiting');
@@ -38,6 +41,32 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const [appliedSettings, setAppliedSettings] = useState({ stake: 1, targetProfit: 5, stopLoss: 5, martingale: 2 });
     const [settingsError, setSettingsError] = useState('');
     const [tickWindow, setTickWindow] = useState(30);
+
+    // Keep the displayed account balance aligned with the currently authorized account.
+    useEffect(() => {
+        if (!authData) {
+            setAccountBalance(null);
+            setIsDemoAccount(null);
+            return;
+        }
+        setAccountBalance(typeof authData.balance === 'number' ? authData.balance : Number(authData.balance));
+        setAccountCurrency(authData.currency || 'USD');
+        setIsDemoAccount(Boolean(authData.is_virtual));
+    }, [authData, activeLoginid]);
+
+    // The account balance stream is already maintained by the shared Deriv API connection.
+    useEffect(() => {
+        const api = api_base.api;
+        if (!api || connectionStatus !== CONNECTION_STATUS.OPENED || !activeLoginid) return undefined;
+        const listener = api.onMessage().subscribe(({ data }: { data: any }) => {
+            if (data?.msg_type !== 'balance' || !data.balance) return;
+            if (data.balance.loginid && data.balance.loginid !== activeLoginid) return;
+            const nextBalance = Number(data.balance.balance);
+            if (Number.isFinite(nextBalance)) setAccountBalance(nextBalance);
+            if (data.balance.currency) setAccountCurrency(data.balance.currency);
+        });
+        return () => listener.unsubscribe();
+    }, [connectionStatus, activeLoginid]);
 
     // One Deriv subscription feeds both the digit stream and the live chart.
     useEffect(() => {
@@ -219,7 +248,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             </section>
 
             <div className='tc-performance-grid'>
-                <article className='tc-panel tc-stat-panel'><small>BALANCE</small><strong>— USD</strong></article>
+                <article className='tc-panel tc-stat-panel'><small>{isDemoAccount === null ? 'BALANCE' : isDemoAccount ? 'D. Bal =' : 'R. Bal ='}</small><strong>{accountBalance === null || !Number.isFinite(accountBalance) ? '—' : accountBalance.toFixed(2)} {accountCurrency}</strong></article>
                 <article className='tc-panel tc-stat-panel tc-stat-panel--start'><small>START TRADES</small></article>
                 <article className='tc-panel tc-stat-panel tc-stat-panel--money'><small>PROFIT / LOSS</small><strong>$0.00</strong></article>
             </div>
