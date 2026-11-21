@@ -24,7 +24,7 @@ const getLastDigit = (quote: number, precision = 2) => {
     return Number(formatted.replace('.', '').slice(-1));
 };
 
-const TradingCenter = () => {
+const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const { connectionStatus } = useApiBase();
     const [symbol, setSymbol] = useState('R_25');
     const [ticks, setTicks] = useState<TickPoint[]>([]);
@@ -181,6 +181,7 @@ const TradingCenter = () => {
     return (
         <section className='trading-center'>
             <header className='tc-heading'>
+                <button type='button' className='tc-exit-fullscreen' aria-label='Exit full-screen trading center' onClick={onExit}>← <span>EXIT</span></button>
                 <div className='tc-heading__brand'><span className='tc-brand-mark'>◎</span><div><h1>ODITRADERS.COM</h1><p>TRADING CENTER <b>•</b> EVEN / ODD</p></div></div>
                 <span className={'tc-live tc-live--' + streamState}><i />{streamState === 'live' ? 'LIVE TICKS' : streamState.toUpperCase()}</span>
             </header>
