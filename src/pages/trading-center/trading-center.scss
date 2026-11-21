@@ -120,6 +120,8 @@
     .tc-trade-list { display: flex; flex-direction: column; width: 100%; max-height: 30rem; overflow-y: auto; gap: .45rem; }
     .tc-trade-row { display: grid; grid-template-columns: .9fr .8fr 1fr .8fr .8fr; align-items: center; gap: .25rem; width: 100%; padding: .8rem .35rem; border: 1px solid #17384d; border-radius: .6rem; background: #0c1b2b; color: #dceaf4; font-size: .9rem; text-align: center; }
     .tc-trade-row strong { color: #34dcae; }
+    .tc-trade-row--won strong, .tc-trade-row--won span:nth-child(2) { color: #27e2a5; }
+    .tc-trade-row--lost strong, .tc-trade-row--lost span:nth-child(2) { color: #ff627d; }
     .tc-trade-row span:nth-child(2) { font-weight: 900; }
     .tc-trade-row span:nth-child(2):not(:first-child) { color: #e7bd65; }
 
