@@ -133,6 +133,12 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 setExecutionMessage('Deriv connection unavailable. Trading stopped.');
                 return;
             }
+            if (contractMap.current.size >= 10) {
+                tradingRef.current = false;
+                setIsTrading(false);
+                setExecutionMessage('Safety pause: 10 contracts are still unsettled. Wait for settlement before restarting.');
+                return;
+            }
             const contractType = selectedContract === 'EVEN' ? 'DIGITEVEN' : 'DIGITODD';
             const stakeAmount = Math.max(0.35, Number(nextStakeRef.current.toFixed(2)));
             try {
