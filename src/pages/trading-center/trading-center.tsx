@@ -191,7 +191,6 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                     <label className='tc-symbol'><span>◈</span><select aria-label='Market symbol' value={symbol} onChange={event => setSymbol(event.target.value)}>{SYMBOLS.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
                     <label className='tc-window'><span className='tc-sr-only'>Tick sample size</span><select value={tickWindow} onChange={event => setTickWindow(Number(event.target.value))}><option value={60}>60</option><option value={100}>100</option></select></label>
                     <div className='tc-window-buttons'>{[30, 60, 120, 1000].map(value => <button type='button' key={value} className={tickWindow === value ? 'active' : ''} onClick={() => setTickWindow(value)}>{value}</button>)}</div>
-                    <div className='tc-ratio'><div className='tc-ratio__even'>Even: <strong>{stats.evenPercent.toFixed(2)}%</strong></div><div className='tc-ratio__odd'>Odd: <strong>{stats.oddPercent.toFixed(2)}%</strong></div></div>
                 </div>
                 <div className='tc-digit-stream' aria-label='Live last digit stream'>
                     {recentTicks.map((tick, index) => <span key={tick.epoch + '-' + index} className={tick.digit % 2 === 0 ? 'even' : 'odd'} title={'Quote: ' + tick.quote}>{tick.digit}</span>)}
