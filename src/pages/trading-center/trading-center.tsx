@@ -85,13 +85,16 @@ const TradingCenter = () => {
             style: 'ticks',
             subscribe: 1,
         }).then((response: any) => {
-            if (!active) return;
+            if (response?.subscription?.id) subscriptionId = response.subscription.id;
+            if (!active) {
+                if (subscriptionId) api.send({ forget: subscriptionId }).catch(() => undefined);
+                return;
+            }
             if (response?.error) {
                 setLastError(response.error.message || 'Unable to subscribe to ticks.');
                 setStreamState('error');
                 return;
             }
-            if (response?.subscription?.id) subscriptionId = response.subscription.id;
             if (response?.history) {
                 const prices: number[] = response.history.prices || [];
                 const times: number[] = response.history.times || [];
