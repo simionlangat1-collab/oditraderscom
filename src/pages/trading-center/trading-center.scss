@@ -216,6 +216,15 @@
         .tc-history-body { min-height: 18rem; padding: .75rem; }
         .tc-history-empty { min-height: 13rem; }
         .tc-history-menu { width: 3.8rem; height: 3.8rem; }
+        .tc-target-modal { padding: 1.45rem .85rem 1.1rem; border-radius: 1.25rem; }
+        .tc-target-success { gap: .45rem; padding: .8rem .45rem; }
+        .tc-target-success > span { flex-basis: 2.5rem; width: 2.5rem; height: 2.5rem; font-size: 1.7rem; }
+        .tc-target-amount { margin: .8rem 0; padding: .8rem .35rem; }
+        .tc-target-amount > span { font-size: .75rem; }
+        .tc-target-amount > small { font-size: .85rem; }
+        .tc-target-message { padding: .75rem .45rem; font-size: .95rem; }
+        .tc-target-submessage { font-size: .82rem; }
+        .tc-target-acknowledge { min-height: 3.7rem; }
         .tc-settings-modal { padding: 1rem; border-radius: 1.2rem; }
         .tc-settings-heading h2 { font-size: 1.6rem; }
         .tc-settings-grid { gap: .6rem; }
