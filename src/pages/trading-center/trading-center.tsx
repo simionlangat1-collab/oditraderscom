@@ -35,6 +35,8 @@ const TradingCenter = () => {
     const [targetProfit, setTargetProfit] = useState('5.00');
     const [stopLoss, setStopLoss] = useState('5.00');
     const [martingale, setMartingale] = useState('2.00');
+    const [appliedSettings, setAppliedSettings] = useState({ stake: 1, targetProfit: 5, stopLoss: 5, martingale: 2 });
+    const [settingsError, setSettingsError] = useState('');
     const [tickWindow, setTickWindow] = useState(100);
 
     // One Deriv subscription feeds both the digit stream and the live chart.
@@ -143,6 +145,37 @@ const TradingCenter = () => {
         setTargetProfit('5.00');
         setStopLoss('5.00');
         setMartingale('2.00');
+        setSettingsError('');
+    };
+
+    const applySettings = () => {
+        const values = {
+            stake: Number(stake),
+            targetProfit: Number(targetProfit),
+            stopLoss: Number(stopLoss),
+            martingale: Number(martingale),
+        };
+
+        if (!Number.isFinite(values.stake) || values.stake < 0.35) {
+            setSettingsError('Stake must be at least 0.35.');
+            return;
+        }
+        if (!Number.isFinite(values.targetProfit) || values.targetProfit < 0) {
+            setSettingsError('Target Profit must be 0 or greater.');
+            return;
+        }
+        if (!Number.isFinite(values.stopLoss) || values.stopLoss < 0) {
+            setSettingsError('Stop Loss must be 0 or greater.');
+            return;
+        }
+        if (!Number.isFinite(values.martingale) || values.martingale < 1) {
+            setSettingsError('Martingale multiplier must be at least 1.');
+            return;
+        }
+
+        setAppliedSettings(values);
+        setSettingsError('');
+        setSettingsOpen(false);
     };
 
     return (
@@ -199,9 +232,10 @@ const TradingCenter = () => {
             <div className='tc-signal-note'>{signal} · Based on observed tick frequency</div>
 
             <div className='tc-actions-grid'>
-                <button type='button' className='tc-panel tc-action tc-action--settings' onClick={() => setSettingsOpen(true)}>☷ <span>Settings</span></button>
+                <button type='button' className='tc-panel tc-action tc-action--settings' onClick={() => { setSettingsError(''); setSettingsOpen(true); }}>☷ <span>Settings</span></button>
                 <button type='button' className='tc-panel tc-action tc-action--load' disabled>⇩ <span>Load Symbol</span></button>
             </div>
+            <div className='tc-signal-note'>ACTIVE SETTINGS · Stake ${appliedSettings.stake.toFixed(2)} · Target ${appliedSettings.targetProfit.toFixed(2)}{appliedSettings.targetProfit === 0 ? ' (OFF)' : ''} · Stop Loss ${appliedSettings.stopLoss.toFixed(2)}{appliedSettings.stopLoss === 0 ? ' (OFF)' : ''} · Martingale ×{appliedSettings.martingale.toFixed(2)}</div>
             <div className='tc-start-row'><button type='button' className='tc-start-button' disabled>START TRADES</button><small>Trading execution will be connected in Phase 2</small></div>
 
             <section className='tc-panel tc-history-panel'>
@@ -219,8 +253,9 @@ const TradingCenter = () => {
                             <label className='tc-setting-field'><span>Stop Loss</span><small>Stop when loss reaches</small><input type='number' min='0' step='0.01' value={stopLoss} onChange={event => setStopLoss(event.target.value)} /></label>
                             <label className='tc-setting-field'><span>Martingale</span><small>Multiplier after a loss</small><input type='number' min='1' step='0.1' value={martingale} onChange={event => setMartingale(event.target.value)} /></label>
                         </div>
-                        <footer className='tc-settings-actions'><button type='button' className='tc-reset-button' onClick={resetSettings}>RESET</button><button type='button' className='tc-apply-button' onClick={() => setSettingsOpen(false)}>APPLY SETTINGS</button></footer>
-                        <p className='tc-settings-note'>Visual setup only. These values will connect to trade controls in Phase 2.</p>
+                        {settingsError && <p className='tc-error' role='alert'>{settingsError}</p>}
+                        <footer className='tc-settings-actions'><button type='button' className='tc-reset-button' onClick={resetSettings}>RESET</button><button type='button' className='tc-apply-button' onClick={applySettings}>APPLY SETTINGS</button></footer>
+                        <p className='tc-settings-note'>Target Profit or Stop Loss set to 0 disables that limit. Stake must be at least 0.35; Martingale must be 1 or greater.</p>
                     </section>
                 </div>
             )}
