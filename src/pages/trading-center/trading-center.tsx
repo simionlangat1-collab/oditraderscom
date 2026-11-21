@@ -121,6 +121,12 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         const placeTrade = async () => {
             if (stopped || !tradingRef.current) return;
             const api = api_base.api;
+            if (!isDemoAccount(activeLoginid) || !authData?.is_virtual) {
+                tradingRef.current = false;
+                setIsTrading(false);
+                setExecutionMessage('Demo account changed or unavailable. Trading stopped.');
+                return;
+            }
             if (!api || api.connection.readyState !== 1) {
                 tradingRef.current = false;
                 setIsTrading(false);
@@ -139,7 +145,6 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                     throw new Error(proposalResponse?.error?.message || 'No valid proposal returned by Deriv.');
                 }
                 const buyResponse: any = await api.send({ buy: proposalResponse.proposal.id, price: Number(proposalResponse.proposal.ask_price) });
-                if (stopped || !tradingRef.current) return;
                 if (buyResponse?.error || !buyResponse?.buy?.contract_id) {
                     throw new Error(buyResponse?.error?.message || 'Deriv did not confirm the purchase.');
                 }
@@ -157,7 +162,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         placeTrade();
         const interval = window.setInterval(placeTrade, 1000);
         return () => { stopped = true; window.clearInterval(interval); };
-    }, [isTrading, selectedContract, symbol, accountCurrency]);
+    }, [isTrading, selectedContract, symbol, accountCurrency, activeLoginid, authData]);
 
     // Keep the displayed account balance aligned with the currently authorized account.
     useEffect(() => {
