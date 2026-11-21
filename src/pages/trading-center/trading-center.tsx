@@ -56,6 +56,8 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const sessionProfitRef = useRef(0);
     const nextStakeRef = useRef(1);
     const tradingRef = useRef(false);
+    const purchaseInFlightRef = useRef(false);
+    const targetStopTriggeredRef = useRef(false);
     const targetProfitPopupShownRef = useRef(false);
     const audioContextRef = useRef<AudioContext | null>(null);
     const soundEnabledRef = useRef(true);
@@ -113,6 +115,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             const targetReached = appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit;
             const stopLossReached = appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss;
             if (targetReached) {
+                targetStopTriggeredRef.current = true;
                 if (!targetProfitPopupShownRef.current) {
                     targetProfitPopupShownRef.current = true;
                     setTargetProfitAchieved(sessionProfitRef.current);
@@ -121,6 +124,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 setIsTrading(false);
                 setExecutionMessage('Target Profit achieved. New trades stopped; open contracts remain monitored.');
             } else if (stopLossReached) {
+                targetStopTriggeredRef.current = true;
                 tradingRef.current = false;
                 setIsTrading(false);
                 setExecutionMessage('Stop Loss reached. New trades stopped; open contracts remain monitored.');
@@ -163,6 +167,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         setTradeHistory([]);
         setLatestTradeResult(null);
         targetProfitPopupShownRef.current = false;
+        targetStopTriggeredRef.current = false;
         setTargetProfitAchieved(null);
         tradingRef.current = true;
         setIsTrading(true);
@@ -173,7 +178,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         if (!isTrading) return undefined;
         let stopped = false;
         const placeTrade = async () => {
-            if (stopped || !tradingRef.current) return;
+            if (stopped || !tradingRef.current || targetStopTriggeredRef.current || purchaseInFlightRef.current) return;
             const api = api_base.api;
             if (!isDemoAccount(activeLoginid) || !authData?.is_virtual) {
                 tradingRef.current = false;
@@ -195,12 +200,13 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             }
             const contractType = selectedContract === 'EVEN' ? 'DIGITEVEN' : 'DIGITODD';
             const stakeAmount = Math.max(0.35, Number(nextStakeRef.current.toFixed(2)));
+            purchaseInFlightRef.current = true;
             try {
                 const proposalResponse: any = await api.send({
                     proposal: 1, amount: stakeAmount, basis: 'stake', contract_type: contractType,
                     currency: accountCurrency, duration: 1, duration_unit: 't', underlying_symbol: symbol,
                 });
-                if (stopped || !tradingRef.current) return;
+                if (stopped || !tradingRef.current || targetStopTriggeredRef.current) return;
                 if (proposalResponse?.error || !proposalResponse?.proposal?.id) {
                     throw new Error(proposalResponse?.error?.message || 'No valid proposal returned by Deriv.');
                 }
@@ -225,6 +231,8 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 tradingRef.current = false;
                 setIsTrading(false);
                 setExecutionMessage(error?.message || 'Trade request failed. Trading stopped for safety.');
+            } finally {
+                purchaseInFlightRef.current = false;
             }
         };
         placeTrade();
