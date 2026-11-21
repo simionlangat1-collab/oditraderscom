@@ -754,3 +754,33 @@
     align-items: center;
     justify-content: center;
 }
+
+/*
+ * Trading Center needs normal document scrolling. The standard bot workspace
+ * intentionally clips its fixed-height canvas; disable that canvas behavior
+ * only when the Trading Center tab is the active rendered content.
+ */
+.main:has(.trading-center) {
+    display: block !important;
+    height: auto !important;
+    min-height: calc(100dvh - 6rem);
+    overflow: visible !important;
+}
+
+.main:has(.trading-center) .main__container {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
+
+.main:has(.trading-center) .dc-tabs__content {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
+
+.main:has(.trading-center) .dc-tabs__content--main__tabs {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
