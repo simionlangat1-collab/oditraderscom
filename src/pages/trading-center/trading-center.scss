@@ -1,0 +1,66 @@
+.trading-center {
+    color: var(--text-general);
+    padding: 2.4rem;
+    max-width: 120rem;
+    margin: 0 auto;
+    min-height: 60vh;
+
+    &__header, &__panel-heading, &__toolbar, &__bar-labels {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.6rem;
+    }
+
+    &__header { margin-bottom: 2rem; }
+    &__eyebrow { color: var(--text-less-prominent); font-size: 1.1rem; letter-spacing: .12em; margin: 0 0 .6rem; }
+    h1 { font-size: 2.8rem; margin: 0; font-weight: 700; }
+    &__subtitle { color: var(--text-less-prominent); margin: .5rem 0 0; }
+    &__status { display: inline-flex; align-items: center; gap: .7rem; border-radius: 2rem; padding: .7rem 1.1rem; font-size: 1.1rem; font-weight: 700; background: var(--general-section-1); }
+    &__status span { width: .8rem; height: .8rem; border-radius: 50%; background: #9ca3af; }
+    &__status--live span { background: #16a34a; box-shadow: 0 0 0 .4rem rgb(22 163 74 / 13%); }
+    &__status--error span { background: #dc2626; }
+    &__notice { display: flex; flex-wrap: wrap; gap: .8rem 1.2rem; align-items: center; padding: 1.2rem 1.5rem; border: 1px solid rgb(37 131 255 / 35%); border-radius: 1rem; background: rgb(37 131 255 / 8%); margin-bottom: 2rem; }
+    &__notice strong { color: #2583ff; font-size: 1.1rem; letter-spacing: .06em; }
+    &__notice span { color: var(--text-general); font-size: 1.2rem; }
+    &__toolbar { justify-content: flex-start; margin-bottom: 1.6rem; flex-wrap: wrap; }
+    &__toolbar label { font-weight: 600; }
+    &__toolbar select { min-width: 22rem; padding: .9rem 1.2rem; color: var(--text-general); background: var(--general-section-1); border: 1px solid var(--border-normal); border-radius: .7rem; }
+    &__tick-count { color: var(--text-less-prominent); font-size: 1.2rem; }
+    &__metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.4rem; margin-bottom: 1.6rem; }
+    &__metric, &__panel { background: var(--general-section-1); border: 1px solid var(--border-normal); border-radius: 1.2rem; padding: 1.8rem; }
+    &__metric { display: flex; flex-direction: column; gap: .7rem; }
+    &__metric > span { color: var(--text-less-prominent); font-size: 1.2rem; }
+    &__metric strong { font-size: 2.6rem; line-height: 1.2; }
+    &__metric small { color: var(--text-less-prominent); font-size: 1.1rem; }
+    &__metric--even strong { color: #2583ff; }
+    &__metric--odd strong { color: #a855f7; }
+    &__panel { margin-bottom: 1.6rem; }
+    &__panel-heading { margin-bottom: 1.6rem; }
+    &__panel-heading > div > span { color: var(--text-less-prominent); font-size: 1.05rem; letter-spacing: .1em; }
+    &__panel-heading h2 { margin: .4rem 0 0; font-size: 1.8rem; }
+    &__signal-tag { color: var(--text-less-prominent); font-size: 1rem; text-align: right; }
+    &__bar { display: flex; height: 1rem; overflow: hidden; border-radius: 1rem; background: var(--general-hover); }
+    &__bar-even { background: #2583ff; transition: width .2s ease; }
+    &__bar-odd { background: #a855f7; transition: width .2s ease; }
+    &__bar-labels { margin-top: .8rem; font-size: 1.1rem; }
+    &__disclaimer { color: var(--text-less-prominent); font-size: 1.1rem; line-height: 1.5; margin: 1.4rem 0 0; }
+    &__digits { display: flex; flex-wrap: wrap; gap: .8rem; }
+    &__digits > span { display: grid; place-items: center; width: 3.8rem; height: 3.8rem; border-radius: .8rem; font-size: 1.6rem; font-weight: 700; }
+    &__digits .is-even { color: #2583ff; background: rgb(37 131 255 / 12%); }
+    &__digits .is-odd { color: #a855f7; background: rgb(168 85 247 / 12%); }
+    &__digits p { color: var(--text-less-prominent); }
+    &__error, &__offline { padding: 1.2rem; margin-bottom: 1.4rem; border-radius: .8rem; background: rgb(220 38 38 / 9%); color: var(--text-general); }
+
+    @media (max-width: 768px) {
+        padding: 1.5rem;
+        &__header { align-items: flex-start; }
+        &__header h1 { font-size: 2.2rem; }
+        &__metrics { grid-template-columns: 1fr; }
+        &__metric { padding: 1.4rem; }
+        &__metric strong { font-size: 2.2rem; }
+        &__panel { padding: 1.4rem; }
+        &__signal-tag { max-width: 11rem; }
+        &__toolbar select { width: 100%; }
+    }
+}
