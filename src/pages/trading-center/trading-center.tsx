@@ -179,6 +179,23 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         let stopped = false;
         const placeTrade = async () => {
             if (stopped || !tradingRef.current || targetStopTriggeredRef.current || purchaseInFlightRef.current) return;
+
+            // Re-check the session limits at the point of execution, not only on settlement.
+            const profitLimitReached = appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit;
+            const lossLimitReached = appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss;
+            if (profitLimitReached || lossLimitReached) {
+                targetStopTriggeredRef.current = true;
+                tradingRef.current = false;
+                setIsTrading(false);
+                setExecutionMessage(profitLimitReached
+                    ? 'Target Profit reached. Trading permanently stopped for this session.'
+                    : 'Stop Loss reached. Trading permanently stopped for this session.');
+                return;
+            }
+
+            // Do not queue another purchase while any contract is unsettled.
+            if (contractMap.current.size > 0) return;
+
             const api = api_base.api;
             if (!isDemoAccount(activeLoginid) || !authData?.is_virtual) {
                 tradingRef.current = false;
@@ -192,12 +209,6 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 setExecutionMessage('Deriv connection unavailable. Trading stopped.');
                 return;
             }
-            if (contractMap.current.size >= 10) {
-                tradingRef.current = false;
-                setIsTrading(false);
-                setExecutionMessage('Safety pause: 10 contracts are still unsettled. Wait for settlement before restarting.');
-                return;
-            }
             const contractType = selectedContract === 'EVEN' ? 'DIGITEVEN' : 'DIGITODD';
             const stakeAmount = Math.max(0.35, Number(nextStakeRef.current.toFixed(2)));
             purchaseInFlightRef.current = true;
@@ -207,6 +218,22 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                     currency: accountCurrency, duration: 1, duration_unit: 't', underlying_symbol: symbol,
                 });
                 if (stopped || !tradingRef.current || targetStopTriggeredRef.current) return;
+
+                // Final hard gate: never send a buy after either session limit has been reached.
+                const profitLimitReachedBeforeBuy = appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit;
+                const lossLimitReachedBeforeBuy = appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss;
+                if (profitLimitReachedBeforeBuy || lossLimitReachedBeforeBuy || contractMap.current.size > 0) {
+                    if (profitLimitReachedBeforeBuy || lossLimitReachedBeforeBuy) {
+                        targetStopTriggeredRef.current = true;
+                        tradingRef.current = false;
+                        setIsTrading(false);
+                        setExecutionMessage(profitLimitReachedBeforeBuy
+                            ? 'Target Profit reached. No further purchases will be sent.'
+                            : 'Stop Loss reached. No further purchases will be sent.');
+                    }
+                    return;
+                }
+
                 if (proposalResponse?.error || !proposalResponse?.proposal?.id) {
                     throw new Error(proposalResponse?.error?.message || 'No valid proposal returned by Deriv.');
                 }
