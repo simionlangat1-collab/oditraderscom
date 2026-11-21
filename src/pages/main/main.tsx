@@ -309,6 +309,12 @@ const AppWrapper = observer(() => {
     }, [active_tab]);
 
     React.useEffect(() => {
+        const isTradingCenterActive = active_tab === DBOT_TABS.TRADING_CENTER;
+        document.body.classList.toggle('trading-center-fullscreen', isTradingCenterActive);
+        return () => document.body.classList.remove('trading-center-fullscreen');
+    }, [active_tab]);
+
+    React.useEffect(() => {
         const trashcan_init_id = setTimeout(() => {
             if (active_tab === BOT_BUILDER && Blockly?.derivWorkspace?.trashcan) {
                 const trashcanY = window.innerHeight - 250;
@@ -419,7 +425,7 @@ const AppWrapper = observer(() => {
                                 }
                                 id='id-trading-center'
                             >
-                                <TradingCenter />
+                                <TradingCenter onExit={() => handleTabChange(DASHBOARD)} />
                             </div>
                             <div
                                 label={
