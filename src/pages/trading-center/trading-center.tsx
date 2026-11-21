@@ -30,7 +30,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const { connectionStatus, authData, activeLoginid } = useApiBase();
     const [accountBalance, setAccountBalance] = useState<number | null>(null);
     const [accountCurrency, setAccountCurrency] = useState('USD');
-    const [isDemoAccount, setIsDemoAccount] = useState<boolean | null>(null);
+    const [isDemoAccountState, setIsDemoAccountState] = useState<boolean | null>(null);
     const [symbol, setSymbol] = useState('R_25');
     const [ticks, setTicks] = useState<TickPoint[]>([]);
     const [streamState, setStreamState] = useState<'waiting' | 'connecting' | 'live' | 'offline' | 'error'>('waiting');
@@ -186,12 +186,12 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     useEffect(() => {
         if (!authData) {
             setAccountBalance(null);
-            setIsDemoAccount(null);
+            setIsDemoAccountState(null);
             return;
         }
         setAccountBalance(typeof authData.balance === 'number' ? authData.balance : Number(authData.balance));
         setAccountCurrency(authData.currency || 'USD');
-        setIsDemoAccount(Boolean(authData.is_virtual));
+        setIsDemoAccountState(Boolean(authData.is_virtual));
     }, [authData, activeLoginid]);
 
     // The account balance stream is already maintained by the shared Deriv API connection.
@@ -388,7 +388,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             </section>
 
             <div className='tc-performance-grid'>
-                <article className='tc-panel tc-stat-panel'><small>{isDemoAccount === null ? 'BALANCE' : isDemoAccount ? 'D. Bal =' : 'R. Bal ='}</small><strong>{accountBalance === null || !Number.isFinite(accountBalance) ? '—' : accountBalance.toFixed(2)} {accountCurrency}</strong></article>
+                <article className='tc-panel tc-stat-panel'><small>{isDemoAccountState === null ? 'BALANCE' : isDemoAccountState ? 'D. Bal =' : 'R. Bal ='}</small><strong>{accountBalance === null || !Number.isFinite(accountBalance) ? '—' : accountBalance.toFixed(2)} {accountCurrency}</strong></article>
                 <button type='button' className='tc-panel tc-stat-panel tc-stat-panel--start tc-start-button' onClick={isTrading ? () => { tradingRef.current = false; setIsTrading(false); setExecutionMessage('Trading stopped. Existing contracts remain tracked.'); } : startTrading}>{isTrading ? 'STOP TRADES' : 'START TRADES'}<small>{isTrading ? 'RUNNING · 1s CYCLE' : 'DEMO ONLY'}</small></button>
                 <article className='tc-panel tc-stat-panel tc-stat-panel--money'><small>PROFIT / LOSS</small><strong>{sessionProfit >= 0 ? '+' : ''}{sessionProfit.toFixed(2)} {accountCurrency}</strong></article>
             </div>
