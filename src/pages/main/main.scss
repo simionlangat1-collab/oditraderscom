@@ -761,6 +761,25 @@
  * only when the Trading Center tab is the active rendered content.
  */
 .main:has(.trading-center) {
+    // Keep the Trading Center inside a dedicated, touch-scrollable viewport.
+    // The app shell is a fixed-height flex layout, so document scrolling alone
+    // is not reliable on mobile browsers.
+    display: block !important;
+    height: calc(100dvh - 6rem) !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - 6rem);
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+
+    /* Keep the existing scoped content rules below. */
+    &__scroll-fix-placeholder { display: none; }
+}
+
+/* Original Trading Center layout overrides, retained below. */
+.main:has(.trading-center) {
     display: block !important;
     height: auto !important;
     min-height: calc(100dvh - 6rem);
