@@ -48,6 +48,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const [sessionProfit, setSessionProfit] = useState(0);
     const [tradeCount, setTradeCount] = useState(0);
     const [tradeHistory, setTradeHistory] = useState<TradeRecord[]>([]);
+    const [latestTradeResult, setLatestTradeResult] = useState<{ profit: number; status: 'WON' | 'LOST' } | null>(null);
     const [executionMessage, setExecutionMessage] = useState('Demo account required. Select EVEN or ODD to begin.');
     const contractMap = useRef(new Map<number, number>());
     const tradeSequence = useRef(0);
@@ -71,7 +72,9 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             if (!Number.isFinite(profit)) return;
             sessionProfitRef.current = Number((sessionProfitRef.current + profit).toFixed(2));
             setSessionProfit(sessionProfitRef.current);
-            setTradeHistory(rows => rows.map(row => row.id === tradeId ? { ...row, profit, status: profit > 0 ? 'WON' : 'LOST', exitSpot: Number(contract.exit_tick) } : row));
+            const status = profit > 0 ? 'WON' : 'LOST';
+            setTradeHistory(rows => rows.map(row => row.id === tradeId ? { ...row, profit, status, exitSpot: Number(contract.exit_tick) } : row));
+            setLatestTradeResult({ profit, status });
             nextStakeRef.current = profit < 0 ? Number((nextStakeRef.current * appliedSettings.martingale).toFixed(2)) : appliedSettings.stake;
             if ((appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit) ||
                 (appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss)) {
@@ -110,6 +113,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         setSessionProfit(0);
         setTradeCount(0);
         setTradeHistory([]);
+        setLatestTradeResult(null);
         tradingRef.current = true;
         setIsTrading(true);
         setExecutionMessage('Demo trading active · one purchase cycle every second.');
@@ -159,6 +163,14 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 contractMap.current.set(Number(buy.contract_id), id);
                 setTradeCount(count => count + 1);
                 setTradeHistory(rows => [{ id, contractId: Number(buy.contract_id), contractType, stake: Number(buy.buy_price ?? stakeAmount), profit: 0, status: 'OPEN' }, ...rows].slice(0, 50));
+                const trackingResponse: any = await api.send({
+                    proposal_open_contract: 1,
+                    contract_id: Number(buy.contract_id),
+                    subscribe: 1,
+                });
+                if (trackingResponse?.error) {
+                    throw new Error(trackingResponse.error.message || 'Unable to subscribe to the contract settlement. Trading stopped for safety.');
+                }
             } catch (error: any) {
                 tradingRef.current = false;
                 setIsTrading(false);
@@ -414,7 +426,15 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
 
             <div className='tc-actions-grid'>
                 <button type='button' className='tc-panel tc-action tc-action--settings' onClick={() => { setSettingsError(''); setSettingsOpen(true); }}>☷ <span>Settings</span></button>
-                <button type='button' className='tc-panel tc-action tc-action--load' disabled>⇩ <span>Load Symbol</span></button>
+                <article className='tc-panel tc-action tc-action--result' aria-live='polite'>
+                    {latestTradeResult && (
+                        <strong className={latestTradeResult.status === 'WON' ? 'tc-result-win' : 'tc-result-loss'}>
+                            {latestTradeResult.profit > 0
+                                ? '+ ' + latestTradeResult.profit.toFixed(2) + ' $ Win'
+                                : '- ' + Math.abs(latestTradeResult.profit).toFixed(2) + ' $ Loss'}
+                        </strong>
+                    )}
+                </article>
             </div>
             <div className='tc-signal-note' role='status'>{executionMessage} · {tradeCount} trades sent</div>
             <div className='tc-signal-note'>ACTIVE SETTINGS · Stake ${appliedSettings.stake.toFixed(2)} · Target ${appliedSettings.targetProfit.toFixed(2)}{appliedSettings.targetProfit === 0 ? ' (OFF)' : ''} · Stop Loss ${appliedSettings.stopLoss.toFixed(2)}{appliedSettings.stopLoss === 0 ? ' (OFF)' : ''} · Martingale ×{appliedSettings.martingale.toFixed(2)}</div>
