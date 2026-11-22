@@ -17,6 +17,13 @@ const SYMBOLS = [
 
 const MAX_PENDING_PURCHASES = 3;
 
+const durationToSeconds = (duration: unknown) => {
+    const match = String(duration ?? '').match(/^(\\d+)([smhd])$/);
+    if (!match) return null;
+    const unitSeconds: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
+    return Number(match[1]) * unitSeconds[match[2]];
+};
+
 const getLastDigit = (quote: number, precision = 2) => {
     const formatted = Number(quote).toFixed(Math.max(0, Math.min(8, precision)));
     return Number(formatted.replace('.', '').slice(-1));
@@ -53,6 +60,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const nextStakeRef = useRef(1);
     const tradingRef = useRef(false);
     const pendingPurchaseCountRef = useRef(0);
+    const checkedContractAvailabilityRef = useRef(new Set<string>());
     const targetStopTriggeredRef = useRef(false);
     const targetProfitPopupShownRef = useRef(false);
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -211,9 +219,33 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             const stakeAmount = Math.max(0.35, Number(nextStakeRef.current.toFixed(2)));
             pendingPurchaseCountRef.current += 1;
             try {
+                // Verify the exact contract and its published duration limits once per symbol/type.
+                const availabilityKey = `${symbol}:${contractType}`;
+                if (!checkedContractAvailabilityRef.current.has(availabilityKey)) {
+                    const contractsResponse: any = await api.send({ contracts_for: symbol });
+                    if (contractsResponse?.error) {
+                        const code = contractsResponse.error.code ? ` (${contractsResponse.error.code})` : '';
+                        throw new Error(`Unable to verify contract availability: ${contractsResponse.error.message || 'Deriv returned an error'}${code}`);
+                    }
+                    const availableContracts = contractsResponse?.contracts_for?.available;
+                    if (!Array.isArray(availableContracts)) {
+                        throw new Error('Deriv did not return contract availability for this market.');
+                    }
+                    const matchingContract = availableContracts.find((item: any) => item.contract_type === contractType);
+                    if (!matchingContract) {
+                        throw new Error(`${contractType} is not currently offered on ${symbol}. No trade was placed.`);
+                    }
+                    const minimumSeconds = durationToSeconds(matchingContract.min_contract_duration);
+                    const maximumSeconds = durationToSeconds(matchingContract.max_contract_duration);
+                    if ((minimumSeconds !== null && minimumSeconds > 1) || (maximumSeconds !== null && maximumSeconds < 1)) {
+                        throw new Error(`${contractType} on ${symbol} supports ${matchingContract.min_contract_duration} to ${matchingContract.max_contract_duration}, not a 1-second duration. No trade was placed.`);
+                    }
+                    checkedContractAvailabilityRef.current.add(availabilityKey);
+                }
+
                 const proposalResponse: any = await api.send({
                     proposal: 1, amount: stakeAmount, basis: 'stake', contract_type: contractType,
-                    currency: accountCurrency, duration: 1, duration_unit: 's', underlying_symbol: symbol,
+                    currency: accountCurrency, duration: 1, duration_unit: 's', underlying_symbol: symbol, subscribe: 1,
                 });
                 if (stopped || !tradingRef.current || targetStopTriggeredRef.current) return;
 
@@ -231,7 +263,9 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 }
 
                 if (proposalResponse?.error || !proposalResponse?.proposal?.id) {
-                    throw new Error(proposalResponse?.error?.message || 'No valid proposal returned by Deriv.');
+                    const proposalError = proposalResponse?.error;
+                    const errorCode = proposalError?.code ? ` (${proposalError.code})` : '';
+                    throw new Error(`${proposalError?.message || 'No valid proposal returned by Deriv.'}${errorCode}`);
                 }
                 const buyResponse: any = await api.send({ buy: proposalResponse.proposal.id, price: Number(proposalResponse.proposal.ask_price) });
                 if (buyResponse?.error || !buyResponse?.buy?.contract_id) {
