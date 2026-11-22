@@ -17,7 +17,7 @@ const SYMBOLS = [
     { value: '1HZ100V', label: 'Volatility 100 (1s) Index' },
 ];
 
-const MAX_PENDING_PURCHASES = 1;
+const MAX_PENDING_PURCHASES = 3;
 
 const durationToSeconds = (duration: unknown) => {
     const match = String(duration ?? '').match(/^(\d+)([smhd])$/);
@@ -190,8 +190,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             if (stopped || !tradingRef.current || targetStopTriggeredRef.current) return;
             // Bound outstanding proposal/buy cycles so a slow connection cannot build a delayed burst.
             if (pendingPurchaseCountRef.current >= MAX_PENDING_PURCHASES) return;
-            // Strict safety: never overlap a new purchase with an unsettled contract.
-            if (contractMap.current.size > 0) return;
+            // Contract settlement is tracked independently; an open contract must not block this 1-second scheduler cycle.
 
             // Re-check the session limits at the point of execution, not only on settlement.
             const profitLimitReached = appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit;
