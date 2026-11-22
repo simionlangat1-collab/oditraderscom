@@ -423,6 +423,8 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             ? 'Odd currently leads'
             : 'Even / Odd balanced';
     const recentTicks = ticks.slice(-36).reverse();
+    const completedTradeHistory = tradeHistory.filter(item => item.status !== 'OPEN');
+    const activeTrade = tradeHistory.find(item => item.status === 'OPEN');
 
     const resetSettings = () => {
         setStake('1.00');
@@ -555,8 +557,9 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             <div className='tc-signal-note'>ACTIVE SETTINGS · Result sounds {soundEnabled ? 'ON' : 'OFF'} · Stake ${appliedSettings.stake.toFixed(2)} · Target ${appliedSettings.targetProfit.toFixed(2)}{appliedSettings.targetProfit === 0 ? ' (OFF)' : ''} · Stop Loss ${appliedSettings.stopLoss.toFixed(2)}{appliedSettings.stopLoss === 0 ? ' (OFF)' : ''} · Martingale ×{appliedSettings.martingale.toFixed(2)}</div>
 
             <section className='tc-panel tc-history-panel'>
+                {activeTrade && <div className='tc-history-body tc-active-trade'><div className='tc-history-title'>CURRENT TRADE <span>IN PROGRESS</span></div><div className='tc-history-columns'><span>PROFIT</span><span>STATUS</span><span>CONTRACT TYPE</span><span>STAKE</span><span>EXIT SPOT</span></div><div className='tc-trade-list'><div className='tc-trade-row tc-trade-row--open' key={activeTrade.id}><strong>—</strong><span>OPEN</span><span>{activeTrade.contractType === 'DIGITEVEN' ? 'EVEN' : 'ODD'}</span><span>{activeTrade.stake.toFixed(2)}</span><span>—</span></div></div></div>}
                 <div className='tc-history-columns'><span>PROFIT</span><span>STATUS</span><span>CONTRACT TYPE</span><span>STAKE</span><span>EXIT SPOT</span></div>
-                <div className='tc-history-body'><div className='tc-history-title'>TRADE HISTORY <span>VIEW ALL</span></div><div className='tc-history-empty'>{tradeHistory.length === 0 ? <><strong>No trades yet</strong><p>Demo trade history will appear here after execution.</p></> : <div className='tc-trade-list'>{tradeHistory.map(item => <div className={`tc-trade-row tc-trade-row--${item.status.toLowerCase()}`} key={item.id}><strong>{item.status === 'OPEN' ? '—' : (item.profit > 0 ? '+' : '') + item.profit.toFixed(2)}</strong><span>{item.status}</span><span>{item.contractType === 'DIGITEVEN' ? 'EVEN' : 'ODD'}</span><span>{item.stake.toFixed(2)}</span><span>{item.exitSpot ?? '—'}</span></div>)}</div>}</div><button type='button' className='tc-history-menu' aria-label='Trade history menu' disabled>☰</button></div>
+                <div className='tc-history-body'><div className='tc-history-title'>TRADE HISTORY <span>COMPLETED</span></div><div className='tc-history-empty'>{completedTradeHistory.length === 0 ? <><strong>No completed trades yet</strong><p>Settled win and loss results will appear here.</p></> : <div className='tc-trade-list'>{completedTradeHistory.map(item => <div className={`tc-trade-row tc-trade-row--${item.status.toLowerCase()}`} key={item.id}><strong>{(item.profit > 0 ? '+' : '') + item.profit.toFixed(2)}</strong><span>{item.status}</span><span>{item.contractType === 'DIGITEVEN' ? 'EVEN' : 'ODD'}</span><span>{item.stake.toFixed(2)}</span><span>{item.exitSpot ?? '—'}</span></div>)}</div>}</div><button type='button' className='tc-history-menu' aria-label='Trade history menu' disabled>☰</button></div>
             </section>
 
             {settingsOpen && (
