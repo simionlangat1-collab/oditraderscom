@@ -18,7 +18,7 @@ const SYMBOLS = [
 const MAX_PENDING_PURCHASES = 3;
 
 const durationToSeconds = (duration: unknown) => {
-    const match = String(duration ?? '').match(/^(\\d+)([smhd])$/);
+    const match = String(duration ?? '').match(/^(\d+)([smhd])$/);
     if (!match) return null;
     const unitSeconds: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
     return Number(match[1]) * unitSeconds[match[2]];
