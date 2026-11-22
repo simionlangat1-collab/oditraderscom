@@ -235,17 +235,12 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                     if (!matchingContract) {
                         throw new Error(`${contractType} is not currently offered on ${symbol}. No trade was placed.`);
                     }
-                    const minimumSeconds = durationToSeconds(matchingContract.min_contract_duration);
-                    const maximumSeconds = durationToSeconds(matchingContract.max_contract_duration);
-                    if ((minimumSeconds !== null && minimumSeconds > 1) || (maximumSeconds !== null && maximumSeconds < 1)) {
-                        throw new Error(`${contractType} on ${symbol} supports ${matchingContract.min_contract_duration} to ${matchingContract.max_contract_duration}, not a 1-second duration. No trade was placed.`);
-                    }
                     checkedContractAvailabilityRef.current.add(availabilityKey);
                 }
 
                 const proposalResponse: any = await api.send({
                     proposal: 1, amount: stakeAmount, basis: 'stake', contract_type: contractType,
-                    currency: accountCurrency, duration: 1, duration_unit: 's', underlying_symbol: symbol, subscribe: 1,
+                    currency: accountCurrency, duration: 1, duration_unit: 't', underlying_symbol: symbol, subscribe: 1,
                 });
                 if (stopped || !tradingRef.current || targetStopTriggeredRef.current) return;
 
