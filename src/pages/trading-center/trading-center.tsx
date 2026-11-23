@@ -326,9 +326,6 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                     pendingPurchaseCountRef.current = Math.max(0, pendingPurchaseCountRef.current - 1);
                 }
             }
-            if (!purchaseCycleReleased) {
-                pendingPurchaseCountRef.current = Math.max(0, pendingPurchaseCountRef.current - 1);
-            }
         };
         placeTrade();
         const interval = window.setInterval(placeTrade, 1000);
