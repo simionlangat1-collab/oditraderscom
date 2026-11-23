@@ -177,7 +177,7 @@
     border-color: rgba(91, 135, 255, .48);
     background: linear-gradient(145deg, #17264d, #080e20 65%, #15183b);
     box-shadow: 0 2.2rem 1.6rem rgba(0, 0, 0, .55), 0 0 2rem rgba(65, 112, 255, .2), inset 0 1px 1px rgba(255,255,255,.15);
-    animation: odt-base-flip 12s linear infinite;
+    animation: odt-base-flip 24s cubic-bezier(.45, 0, .55, 1) infinite;
 }
 
 .odt-stack--middle {
@@ -185,7 +185,7 @@
     border-color: rgba(115, 130, 255, .58);
     background: linear-gradient(145deg, #202750, #090e25 65%, #251b50);
     box-shadow: 0 1.8rem 1.4rem rgba(0, 0, 0, .48), 0 0 2rem rgba(112, 91, 255, .22), inset 0 1px 1px rgba(255,255,255,.18);
-    animation: odt-middle-flip 12s linear infinite;
+    animation: odt-middle-flip 24s cubic-bezier(.45, 0, .55, 1) infinite;
 }
 
 .odt-stack--top {
@@ -195,7 +195,7 @@
     border: 0;
     background: transparent;
     box-shadow: none;
-    animation: odt-top-flip 12s linear infinite;
+    animation: odt-top-flip 24s cubic-bezier(.45, 0, .55, 1) infinite;
 }
 
 .odt-stack__rotator {
