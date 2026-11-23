@@ -149,99 +149,6 @@
             white-space: nowrap;
         }
     }
-
-    &__partner {
-        position: relative;
-        z-index: 2;
-        margin: 1rem 0 0;
-        padding: 2.5rem 2.5rem 2.8rem;
-        min-height: 15rem;
-        border-radius: 2.2rem;
-        background: #fafafa;
-        color: #1e263b;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 2rem;
-        box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.22);
-
-        small {
-            color: #d84f78;
-            font-size: 1.05rem;
-            font-weight: 900;
-            letter-spacing: 0.28rem;
-        }
-
-        h3 {
-            margin: 1rem 0 0;
-            font-size: 1.8rem;
-            font-weight: 500;
-        }
-    }
-
-    &__learn-more {
-        margin-top: 1.4rem;
-        padding: 0.9rem 1.5rem;
-        border: 1px solid #d8dce7;
-        border-radius: 1.8rem;
-        background: #fff;
-        font-weight: 700;
-        color: #2a3041;
-    }
-
-    &__refer {
-        min-width: 16rem;
-        min-height: 5.2rem;
-        border: 0;
-        border-radius: 1.7rem;
-        padding: 0 1.8rem;
-        color: #fff;
-        font-size: 1.25rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #ff4fc8, #ef5d83);
-        box-shadow: 0 1rem 2.5rem rgba(255, 79, 200, 0.24);
-    }
-
-    &__risk {
-        position: fixed;
-        z-index: 20;
-        left: 1.4rem;
-        bottom: 5.5rem;
-        padding: 0.9rem 1.2rem;
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        border-radius: 2rem;
-        background: rgba(255, 255, 255, 0.88);
-        color: #677085;
-        font-size: 0.95rem;
-        font-weight: 700;
-        box-shadow: 0 0.7rem 2rem rgba(0, 0, 0, 0.18);
-    }
-
-    &__ai {
-        position: fixed;
-        z-index: 21;
-        right: 1rem;
-        bottom: 4.4rem;
-        width: 7rem;
-        height: 7rem;
-        border: 0;
-        border-radius: 50%;
-        color: #fff;
-        background: radial-gradient(circle at 35% 30%, #3f8dfb, #2066d9 55%, #204eac);
-        box-shadow: 0 1.2rem 3rem rgba(25, 103, 226, 0.45);
-        font-size: 1.9rem;
-        font-weight: 900;
-
-        i {
-            position: absolute;
-            right: 0.5rem;
-            top: 0.5rem;
-            width: 1rem;
-            height: 1rem;
-            border-radius: 50%;
-            background: #2ed26f;
-            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
-        }
     }
 }
 
@@ -336,32 +243,6 @@
             p {
                 font-size: 1.25rem;
             }
-        }
-
-        &__partner {
-            padding: 2rem 1.7rem;
-            min-height: 18rem;
-            flex-direction: column;
-            align-items: stretch;
-
-            h3 {
-                font-size: 1.6rem;
-            }
-        }
-
-        &__refer {
-            width: 100%;
-        }
-
-        &__risk {
-            bottom: 5.4rem;
-            font-size: 0.85rem;
-        }
-
-        &__ai {
-            width: 6.4rem;
-            height: 6.4rem;
-            bottom: 4.2rem;
         }
 
         &__section-title {
