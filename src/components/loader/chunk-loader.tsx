@@ -19,6 +19,17 @@ export default function ChunkLoader({ message, onAnimationComplete }: ChunkLoade
         <main className='odt-startup' role='status' aria-live='polite' aria-label='ODI TRADERS is starting'>
             <div className='odt-startup__ambient odt-startup__ambient--left' />
             <div className='odt-startup__ambient odt-startup__ambient--right' />
+            <div className='odt-startup__falling-stars' aria-hidden='true'>
+                <span className='odt-startup__star odt-startup__star--one'>★</span>
+                <span className='odt-startup__star odt-startup__star--two'>✦</span>
+                <span className='odt-startup__star odt-startup__star--three'>★</span>
+                <span className='odt-startup__star odt-startup__star--four'>✧</span>
+                <span className='odt-startup__star odt-startup__star--five'>★</span>
+                <span className='odt-startup__star odt-startup__star--six'>✦</span>
+                <span className='odt-startup__star odt-startup__star--seven'>✧</span>
+                <span className='odt-startup__star odt-startup__star--eight'>★</span>
+                <span className='odt-startup__star odt-startup__star--nine'>✦</span>
+            </div>
             <div className='odt-startup__top-ribbons' aria-hidden='true'>
                 <span className='odt-startup__top-ribbon odt-startup__top-ribbon--one' />
                 <span className='odt-startup__top-ribbon odt-startup__top-ribbon--two' />
