@@ -66,6 +66,8 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const contractAvailabilityPromiseRef = useRef<Promise<void> | null>(null);
     const checkedContractAvailabilityRef = useRef(new Set<string>());
     const targetStopTriggeredRef = useRef(false);
+    const tradeGenerationRef = useRef(0);
+    const buyRequestInFlightRef = useRef(false);
     const targetProfitPopupShownRef = useRef(false);
     const audioContextRef = useRef<AudioContext | null>(null);
     const soundEnabledRef = useRef(true);
@@ -129,6 +131,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             const stopLossReached = appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss;
             if (targetReached) {
                 targetStopTriggeredRef.current = true;
+                tradeGenerationRef.current += 1;
                 if (!targetProfitPopupShownRef.current) {
                     targetProfitPopupShownRef.current = true;
                     setTargetProfitAchieved(sessionProfitRef.current);
@@ -138,6 +141,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 setExecutionMessage('Target Profit achieved. New trades stopped; open contracts remain monitored.');
             } else if (stopLossReached) {
                 targetStopTriggeredRef.current = true;
+                tradeGenerationRef.current += 1;
                 tradingRef.current = false;
                 setIsTrading(false);
                 setExecutionMessage('Stop Loss reached. New trades stopped; open contracts remain monitored.');
@@ -184,6 +188,8 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         setLatestTradeResult(null);
         targetProfitPopupShownRef.current = false;
         targetStopTriggeredRef.current = false;
+        tradeGenerationRef.current += 1;
+        buyRequestInFlightRef.current = false;
         setTargetProfitAchieved(null);
         tradingRef.current = true;
         setIsTrading(true);
@@ -196,6 +202,9 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         const placeTrade = async () => {
             let purchaseCycleReleased = false;
             if (stopped || !tradingRef.current || targetStopTriggeredRef.current) return;
+            // Never allow two scheduler cycles to cross the final BUY gate together.
+            if (buyRequestInFlightRef.current) return;
+            const cycleGeneration = tradeGenerationRef.current;
             // Bound outstanding proposal/buy cycles so a slow connection cannot build a delayed burst.
             if (pendingPurchaseCountRef.current >= MAX_PENDING_PURCHASES) return;
             // Contract settlement is tracked independently; an open contract must not block this 1-second scheduler cycle.
@@ -256,20 +265,26 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                         });
                     }
                     await contractAvailabilityPromiseRef.current;
-                    if (stopped || !tradingRef.current || targetStopTriggeredRef.current) return;
+                    if (stopped || !tradingRef.current || targetStopTriggeredRef.current || tradeGenerationRef.current !== cycleGeneration) return;
                 }
 
                 const proposalResponse: any = await api.send({
                     proposal: 1, amount: stakeAmount, basis: 'stake', contract_type: contractType,
                     currency: accountCurrency, duration: 1, duration_unit: 't', underlying_symbol: symbol, subscribe: 1,
                 });
-                if (stopped || !tradingRef.current || targetStopTriggeredRef.current) return;
+                if (stopped || !tradingRef.current || targetStopTriggeredRef.current || tradeGenerationRef.current !== cycleGeneration) return;
+
+                // Lock the final purchase section so overlapping scheduler cycles cannot
+                // race through the stop check and both initiate a BUY.
+                if (buyRequestInFlightRef.current) return;
+                buyRequestInFlightRef.current = true;
 
                 // Final hard gate: never send a buy after either session limit has been reached.
                 const profitLimitReachedBeforeBuy = appliedSettings.targetProfit > 0 && sessionProfitRef.current >= appliedSettings.targetProfit;
                 const lossLimitReachedBeforeBuy = appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss;
-                if (profitLimitReachedBeforeBuy || lossLimitReachedBeforeBuy) {
+                if (profitLimitReachedBeforeBuy || lossLimitReachedBeforeBuy || targetStopTriggeredRef.current || tradeGenerationRef.current !== cycleGeneration || stopped || !tradingRef.current) {
                     targetStopTriggeredRef.current = true;
+                    tradeGenerationRef.current += 1;
                     tradingRef.current = false;
                     setIsTrading(false);
                     setExecutionMessage(profitLimitReachedBeforeBuy
@@ -322,6 +337,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 setIsTrading(false);
                 setExecutionMessage(error?.message || 'Trade request failed. Trading stopped for safety.');
             } finally {
+                buyRequestInFlightRef.current = false;
                 if (!purchaseCycleReleased) {
                     pendingPurchaseCountRef.current = Math.max(0, pendingPurchaseCountRef.current - 1);
                 }
