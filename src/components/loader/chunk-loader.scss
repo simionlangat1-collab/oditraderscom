@@ -100,19 +100,7 @@
     &__loading-message { flex: 1; }
 
     &__loading-pulse {
-        display: flex;
-        gap: .3rem;
-
-        i {
-            width: .35rem;
-            height: .35rem;
-            border-radius: 50%;
-            background: #b99bff;
-            animation: odt-dot-pulse 1s ease-in-out infinite;
-
-            &:nth-child(2) { animation-delay: .15s; }
-            &:nth-child(3) { animation-delay: .3s; }
-        }
+        display: none;
     }
 
     &__track {
@@ -130,7 +118,9 @@
             border-radius: inherit;
             background: linear-gradient(90deg, #567eff, #b17cff, #73c7ff);
             box-shadow: 0 0 13px rgba(151, 116, 255, .8);
-            animation: odt-track-sweep 1.8s ease-in-out infinite;
+            animation: none;
+            width: 100%;
+            opacity: .82;
         }
     }
 
@@ -331,7 +321,7 @@
     border-radius: 50%;
     background: #d4c4ff;
     box-shadow: 0 0 1.2rem .3rem rgba(159, 123, 255, .85);
-    animation: odt-sparkle 2.2s ease-in-out infinite alternate;
+    opacity: .8;
 
     &--one { top: 17%; right: 12%; }
     &--two { bottom: 17%; left: 10%; animation-delay: -1.1s; background: #7dc9ff; }
@@ -347,9 +337,6 @@
 @keyframes odt-middle-hover { 0%, 100% { transform: translate(-50%, -50%) rotateX(57deg) rotateZ(-35deg) translateY(0); } 50% { transform: translate(-50%, -50%) rotateX(57deg) rotateZ(-35deg) translateY(.3rem); } }
 @keyframes odt-base-hover { 0%, 100% { transform: translate(-50%, -50%) rotateX(57deg) rotateZ(-35deg) translateY(0); } 50% { transform: translate(-50%, -50%) rotateX(57deg) rotateZ(-35deg) translateY(.5rem); } }
 @keyframes odt-glow-drift { to { transform: translate(3rem, 2rem) scale(1.12); } }
-@keyframes odt-dot-pulse { 0%, 80%, 100% { opacity: .35; transform: scale(.75); } 40% { opacity: 1; transform: scale(1); } }
-@keyframes odt-track-sweep { 0% { transform: translateX(-115%); } 100% { transform: translateX(310%); } }
-@keyframes odt-sparkle { to { opacity: .25; transform: scale(.55); } }
 
 @media (max-width: 480px) {
     .odt-startup {
