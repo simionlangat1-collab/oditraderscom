@@ -57,11 +57,13 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const [targetProfitAchieved, setTargetProfitAchieved] = useState<number | null>(null);
     const [executionMessage, setExecutionMessage] = useState('Demo account required. Select EVEN or ODD to begin.');
     const contractMap = useRef(new Map<number, number>());
+    const contractSubscriptionMap = useRef(new Map<number, string>());
     const tradeSequence = useRef(0);
     const sessionProfitRef = useRef(0);
     const nextStakeRef = useRef(1);
     const tradingRef = useRef(false);
     const pendingPurchaseCountRef = useRef(0);
+    const contractAvailabilityPromiseRef = useRef<Promise<void> | null>(null);
     const checkedContractAvailabilityRef = useRef(new Set<string>());
     const targetStopTriggeredRef = useRef(false);
     const targetProfitPopupShownRef = useRef(false);
@@ -106,6 +108,11 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             const tradeId = contractMap.current.get(contractId);
             if (tradeId === undefined) return;
             contractMap.current.delete(contractId);
+            const subscriptionId = contractSubscriptionMap.current.get(contractId);
+            if (subscriptionId) {
+                contractSubscriptionMap.current.delete(contractId);
+                api.send({ forget: subscriptionId }).catch(() => undefined);
+            }
             const profit = Number((Number(contract.sell_price) - Number(contract.buy_price)).toFixed(2));
             if (!Number.isFinite(profit)) return;
             sessionProfitRef.current = Number((sessionProfitRef.current + profit).toFixed(2));
@@ -187,6 +194,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         if (!isTrading) return undefined;
         let stopped = false;
         const placeTrade = async () => {
+            let purchaseCycleReleased = false;
             if (stopped || !tradingRef.current || targetStopTriggeredRef.current) return;
             // Bound outstanding proposal/buy cycles so a slow connection cannot build a delayed burst.
             if (pendingPurchaseCountRef.current >= MAX_PENDING_PURCHASES) return;
@@ -222,24 +230,33 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             const stakeAmount = Math.max(0.35, Number(nextStakeRef.current.toFixed(2)));
             pendingPurchaseCountRef.current += 1;
             try {
-                // Verify the exact contract and its published duration limits once per symbol/type.
+                // Verify availability once per symbol/type. If several scheduler cycles arrive
+                // while this request is still in flight, they share the same promise instead
+                // of sending duplicate contracts_for requests.
                 const availabilityKey = `${symbol}:${contractType}`;
                 if (!checkedContractAvailabilityRef.current.has(availabilityKey)) {
-                    const contractsResponse: any = await api.send({ contracts_for: symbol });
+                    if (!contractAvailabilityPromiseRef.current) {
+                        contractAvailabilityPromiseRef.current = (async () => {
+                            const contractsResponse: any = await api.send({ contracts_for: symbol });
+                            if (contractsResponse?.error) {
+                                const code = contractsResponse.error.code ? ` (${contractsResponse.error.code})` : '';
+                                throw new Error(`Unable to verify contract availability: ${contractsResponse.error.message || 'Deriv returned an error'}${code}`);
+                            }
+                            const availableContracts = contractsResponse?.contracts_for?.available;
+                            if (!Array.isArray(availableContracts)) {
+                                throw new Error('Deriv did not return contract availability for this market.');
+                            }
+                            const matchingContract = availableContracts.find((item: any) => item.contract_type === contractType);
+                            if (!matchingContract) {
+                                throw new Error(`${contractType} is not currently offered on ${symbol}. No trade was placed.`);
+                            }
+                            checkedContractAvailabilityRef.current.add(availabilityKey);
+                        })().finally(() => {
+                            contractAvailabilityPromiseRef.current = null;
+                        });
+                    }
+                    await contractAvailabilityPromiseRef.current;
                     if (stopped || !tradingRef.current || targetStopTriggeredRef.current) return;
-                    if (contractsResponse?.error) {
-                        const code = contractsResponse.error.code ? ` (${contractsResponse.error.code})` : '';
-                        throw new Error(`Unable to verify contract availability: ${contractsResponse.error.message || 'Deriv returned an error'}${code}`);
-                    }
-                    const availableContracts = contractsResponse?.contracts_for?.available;
-                    if (!Array.isArray(availableContracts)) {
-                        throw new Error('Deriv did not return contract availability for this market.');
-                    }
-                    const matchingContract = availableContracts.find((item: any) => item.contract_type === contractType);
-                    if (!matchingContract) {
-                        throw new Error(`${contractType} is not currently offered on ${symbol}. No trade was placed.`);
-                    }
-                    checkedContractAvailabilityRef.current.add(availabilityKey);
                 }
 
                 const proposalResponse: any = await api.send({
@@ -271,23 +288,45 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                     throw new Error(buyResponse?.error?.message || 'Deriv did not confirm the purchase.');
                 }
                 const buy = buyResponse.buy;
+                const contractId = Number(buy.contract_id);
                 const id = ++tradeSequence.current;
-                contractMap.current.set(Number(buy.contract_id), id);
+                contractMap.current.set(contractId, id);
                 setTradeCount(count => count + 1);
-                setTradeHistory(rows => [{ id, contractId: Number(buy.contract_id), contractType, stake: Number(buy.buy_price ?? stakeAmount), profit: 0, status: 'OPEN' }, ...rows].slice(0, 50));
-                const trackingResponse: any = await api.send({
+                setTradeHistory(rows => [{ id, contractId, contractType, stake: Number(buy.buy_price ?? stakeAmount), profit: 0, status: 'OPEN' }, ...rows].slice(0, 50));
+
+                // The purchase cycle ends as soon as BUY succeeds. Settlement tracking is
+                // deliberately detached so a slow tracker cannot block the next 1-second
+                // scheduler cycle.
+                pendingPurchaseCountRef.current = Math.max(0, pendingPurchaseCountRef.current - 1);
+                purchaseCycleReleased = true;
+
+                void api.send({
                     proposal_open_contract: 1,
-                    contract_id: Number(buy.contract_id),
+                    contract_id: contractId,
                     subscribe: 1,
+                }).then((trackingResponse: any) => {
+                    if (trackingResponse?.subscription?.id) {
+                        contractSubscriptionMap.current.set(contractId, String(trackingResponse.subscription.id));
+                    }
+                    if (trackingResponse?.error) {
+                        throw new Error(trackingResponse.error.message || 'Unable to subscribe to the contract settlement.');
+                    }
+                }).catch((trackingError: any) => {
+                    if (!contractMap.current.has(contractId)) return;
+                    tradingRef.current = false;
+                    setIsTrading(false);
+                    setExecutionMessage(trackingError?.message || 'Unable to track the purchased contract. New trades stopped for safety.');
                 });
-                if (trackingResponse?.error) {
-                    throw new Error(trackingResponse.error.message || 'Unable to subscribe to the contract settlement. Trading stopped for safety.');
-                }
             } catch (error: any) {
                 tradingRef.current = false;
                 setIsTrading(false);
                 setExecutionMessage(error?.message || 'Trade request failed. Trading stopped for safety.');
             } finally {
+                if (!purchaseCycleReleased) {
+                    pendingPurchaseCountRef.current = Math.max(0, pendingPurchaseCountRef.current - 1);
+                }
+            }
+            if (!purchaseCycleReleased) {
                 pendingPurchaseCountRef.current = Math.max(0, pendingPurchaseCountRef.current - 1);
             }
         };
