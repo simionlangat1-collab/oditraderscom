@@ -420,7 +420,7 @@ const AppWrapper = observer(() => {
                                             width='24px'
                                             fill='var(--text-general)'
                                         />
-                                        <Localize i18n_default_text='Trading Center' />
+                                        <Localize i18n_default_text='Trade Center' />
                                     </>
                                 }
                                 id='id-trading-center'
@@ -459,7 +459,7 @@ const AppWrapper = observer(() => {
                                             fill='var(--text-general)'
                                             className='icon-general-fill-g-path'
                                         />
-                                        <Localize i18n_default_text='Tutorials' />
+                                        <Localize i18n_default_text='Tutorial' />
                                     </>
                                 }
                                 id='id-tutorials'
