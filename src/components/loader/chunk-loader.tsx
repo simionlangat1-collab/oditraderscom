@@ -10,7 +10,6 @@ export default function ChunkLoader({ message }: { message: string }) {
 
             <section className='odt-startup__content'>
                 <div className='odt-startup__symbol' aria-hidden='true'>
-                    <div className='odt-startup__triangle' />
                 </div>
 
                 <div className='odt-startup__eyebrow'>THE NEXT LEVEL OF TRADING</div>
