@@ -24,7 +24,7 @@ const DashboardComponent = observer(({ handleTabChange }: TMobileIconGuide) => {
         >
             <div className='gtr-dashboard__hero'>
                 <div className='gtr-dashboard__welcome'>
-                    <h1>{localize('Bom dia')}</h1>
+                    <h1>{localize('Only The Best')}</h1>
                     <div className='gtr-dashboard__dots' aria-hidden='true'>
                         <span /><span /><span /><span /><b /><span /><span /><span /><span /><span /><span /><span />
                     </div>
@@ -49,19 +49,6 @@ const DashboardComponent = observer(({ handleTabChange }: TMobileIconGuide) => {
                 </div>
 
                 <Cards has_dashboard_strategies={false} is_mobile={!isDesktop} />
-            </section>
-
-            <section className='gtr-dashboard__partner'>
-                <div>
-                    <small>PARTNER REFERRAL</small>
-                    <h3>Master Partner share</h3>
-                    <button type='button' className='gtr-dashboard__learn-more'>
-                        Learn more ↓
-                    </button>
-                </div>
-                <button type='button' className='gtr-dashboard__refer'>
-                    Refer a partner →
-                </button>
             </section>
 
             <div className='gtr-dashboard__risk'>⚠ Risk Disclaimer</div>
