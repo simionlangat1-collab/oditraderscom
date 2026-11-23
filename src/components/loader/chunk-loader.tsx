@@ -9,55 +9,8 @@ export default function ChunkLoader({ message }: { message: string }) {
             <div className='odt-startup__floor' />
 
             <section className='odt-startup__content'>
-                <div className='odt-stack-scene' aria-hidden='true'>
-                    <div className='odt-stack odt-stack--base'>
-                        <div className='odt-stack__rotator'>
-                            <div className='odt-stack__surface odt-stack__surface--front'>
-                                <div className='odt-stack__brand'>
-                                    <span className='odt-stack__monogram'>ODI</span>
-                                    <span className='odt-stack__brand-name'>TRADERS</span>
-                                </div>
-                                <span className='odt-stack__edge-light' />
-                            </div>
-                            <div className='odt-stack__surface odt-stack__surface--back'>
-                                <span className='odt-stack__back-mark'>ODI</span>
-                                <span className='odt-stack__back-copy'>TRADE SMARTER<br />TRADE SAFER</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className='odt-stack odt-stack--middle'>
-                        <div className='odt-stack__rotator'>
-                            <div className='odt-stack__surface odt-stack__surface--front'>
-                                <div className='odt-stack__brand'>
-                                    <span className='odt-stack__monogram'>ODI</span>
-                                    <span className='odt-stack__brand-name'>TRADERS</span>
-                                </div>
-                                <span className='odt-stack__edge-light' />
-                            </div>
-                            <div className='odt-stack__surface odt-stack__surface--back'>
-                                <span className='odt-stack__back-mark'>ODI</span>
-                                <span className='odt-stack__back-copy'>TRADE SMARTER<br />TRADE SAFER</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className='odt-stack odt-stack--top'>
-                        <div className='odt-stack__rotator'>
-                            <div className='odt-stack__surface odt-stack__surface--front'>
-                                <div className='odt-stack__brand'>
-                                    <span className='odt-stack__monogram'>ODI</span>
-                                    <span className='odt-stack__brand-name'>TRADERS</span>
-                                </div>
-                                <span className='odt-stack__edge-light' />
-                            </div>
-                            <div className='odt-stack__surface odt-stack__surface--back'>
-                                <span className='odt-stack__back-mark'>ODI</span>
-                                <span className='odt-stack__back-copy'>TRADE SMARTER<br />TRADE SAFER</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className='odt-stack__reflection' />
-                    <div className='odt-stack__spark odt-stack__spark--one' />
-                    <div className='odt-stack__spark odt-stack__spark--two' />
+                <div className='odt-startup__symbol' aria-hidden='true'>
+                    <div className='odt-startup__triangle' />
                 </div>
 
                 <div className='odt-startup__eyebrow'>THE NEXT LEVEL OF TRADING</div>
