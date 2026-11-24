@@ -38,6 +38,26 @@ jest.mock('@/components/shared', () => ({
     addComma: (val: string) => val,
     getCurrencyDisplayCode: (c: string) => c,
     getDecimalPlaces: () => 2,
+    isProduction: () => false,
+}));
+
+jest.mock('@/components/currency/currency-icon', () => ({
+    CurrencyIcon: () => <span>Demo icon</span>,
+}));
+
+jest.mock('@/external/deriv-core/auth/storage', () => ({
+    getAuthInfo: jest.fn(),
+}));
+
+jest.mock('@/external/bot-skeleton/services/api/observables/connection-status-stream', () => ({
+    setAccountList: jest.fn(),
+}));
+
+jest.mock('@/services/derivws-accounts.service', () => ({
+    DerivWSAccountsService: {
+        clearCache: jest.fn(),
+        fetchAccountsList: jest.fn(),
+    },
 }));
 
 jest.mock('@/utils/account-helpers', () => ({
@@ -92,13 +112,13 @@ describe('AccountSwitcher', () => {
         expect(screen.getByTestId('dt_balance')).toHaveTextContent('100.00 USD');
     });
 
-    it('opens dropdown on click when multiple accounts exist', () => {
+    it('opens the centered account modal on click when multiple accounts exist', () => {
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
         fireEvent.click(screen.getByTestId('dt_acc_info'));
-        expect(screen.getByRole('listbox')).toBeInTheDocument();
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    it('does not open dropdown when bot is running via run_panel', () => {
+    it('does not open the account modal when bot is running via run_panel', () => {
         const { useStore } = require('@/hooks/useStore');
         useStore.mockReturnValue({
             client: { checkAndRegenerateWebSocket: mockCheckAndRegenerateWebSocket },
@@ -106,17 +126,17 @@ describe('AccountSwitcher', () => {
         });
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
         fireEvent.click(screen.getByTestId('dt_acc_info'));
-        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('does not open dropdown when api_base.is_running is true', () => {
+    it('does not open the account modal when api_base.is_running is true', () => {
         require('@/external/bot-skeleton/services/api/api-base').api_base.is_running = true;
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
         fireEvent.click(screen.getByTestId('dt_acc_info'));
         expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
 
-    it('does not open dropdown with a single account', () => {
+    it('does not open the account modal with a single account', () => {
         const { useApiBase } = require('@/hooks/useApiBase');
         useApiBase.mockReturnValue({
             accountList: [{ loginid: 'CR123', currency: 'USD', balance: 100, is_virtual: 0 }],
@@ -127,15 +147,15 @@ describe('AccountSwitcher', () => {
         expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
 
-    it('closes dropdown on outside click', () => {
+    it('closes the account modal when the backdrop is clicked', () => {
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
         fireEvent.click(screen.getByTestId('dt_acc_info'));
         expect(screen.getByRole('listbox')).toBeInTheDocument();
-        fireEvent.mouseDown(document.body);
+        fireEvent.mouseDown(screen.getByRole('dialog'));
         expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
 
-    it('closes dropdown on Escape key', () => {
+    it('closes the account modal on Escape key', () => {
         render(<AccountSwitcher activeAccount={mockActiveAccount} />);
         fireEvent.click(screen.getByTestId('dt_acc_info'));
         expect(screen.getByRole('listbox')).toBeInTheDocument();
@@ -184,7 +204,7 @@ describe('AccountSwitcher', () => {
         const trigger = screen.getByTestId('dt_acc_info');
         expect(trigger).toHaveAttribute('role', 'button');
         expect(trigger).toHaveAttribute('aria-expanded', 'false');
-        expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+        expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
         fireEvent.click(trigger);
         expect(trigger).toHaveAttribute('aria-expanded', 'true');
     });
