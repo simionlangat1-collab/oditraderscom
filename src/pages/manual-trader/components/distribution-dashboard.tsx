@@ -42,7 +42,7 @@ export const ManualTraderDistributionPanels = ({ ticks }: Props) => {
                         <h2>Over / Under distribution</h2>
                         <p>Observed tick distribution around the selected barrier digit</p>
                     </div>
-                    <span>{ticks.length.toLocaleString()} / {TICK_WINDOW.toLocaleString()} ticks</span>
+                    <span>{ticks.length.toLocaleString()} ticks</span>
                 </div>
                 <div className='analysis-tool__barrier-control'>
                     <label htmlFor='manual-analysis-over-under-digit'>Over / Under digit</label>
