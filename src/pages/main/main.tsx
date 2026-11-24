@@ -428,6 +428,22 @@ const AppWrapper = observer(() => {
                             >
                                 <TradingCenter onExit={() => handleTabChange(DASHBOARD)} />
                             </div>
+
+                            <div
+                                label={
+                                    <>
+                                        <LabelPairedChartLineCaptionRegularIcon
+                                            height='24px'
+                                            width='24px'
+                                            fill='var(--text-general)'
+                                        />
+                                        <Localize i18n_default_text='Manual Trader' />
+                                    </>
+                                }
+                                id='id-manual-trader'
+                            >
+                                <ManualTrader />
+                            </div>
                             <div
                                 label={
                                     <>
@@ -476,21 +492,6 @@ const AppWrapper = observer(() => {
                                 </div>
                             </div>
 
-                            <div
-                                label={
-                                    <>
-                                        <LabelPairedChartLineCaptionRegularIcon
-                                            height='24px'
-                                            width='24px'
-                                            fill='var(--text-general)'
-                                        />
-                                        <Localize i18n_default_text='Manual Trader' />
-                                    </>
-                                }
-                                id='id-manual-trader'
-                            >
-                                <ManualTrader />
-                            </div>
                         </Tabs>
                         {!isDesktop && right_tab_shadow && <span className='tabs-shadow tabs-shadow--right' />}{' '}
                     </div>
