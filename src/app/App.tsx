@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import React from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
 import { cleanupUrl, handleOAuthCallback } from '@/external/deriv-core';
@@ -17,6 +17,54 @@ import './app-root.scss';
 const Layout = lazy(() => import('../components/layout'));
 const AppRoot = lazy(() => import('./app-root'));
 
+const StartupReadySignal = ({ onReady }: { onReady: () => void }) => {
+    useEffect(() => {
+        onReady();
+    }, [onReady]);
+
+    return null;
+};
+
+/**
+ * Keeps the premium startup animation visible for one complete orbital lap.
+ * The dashboard is revealed only after both the app shell is ready and the
+ * golden orb has returned to its starting position.
+ */
+const StartupGate = () => {
+    const [orbitComplete, setOrbitComplete] = useState(false);
+    const [appReady, setAppReady] = useState(false);
+    const markAppReady = useCallback(() => setAppReady(true), []);
+    const startupComplete = orbitComplete && appReady;
+
+    return (
+        <>
+            <div className={startupComplete ? undefined : 'odt-startup__app-hidden'}>
+                <Suspense fallback={null}>
+                    <TranslationProvider defaultLang='EN' i18nInstance={i18nInstance}>
+                        <LanguageHandler>
+                            <StoreProvider>
+                                <LocalStorageSyncWrapper>
+                                    <RoutePromptDialog />
+                                    <CoreStoreProvider>
+                                        <Layout />
+                                        <StartupReadySignal onReady={markAppReady} />
+                                    </CoreStoreProvider>
+                                </LocalStorageSyncWrapper>
+                            </StoreProvider>
+                        </LanguageHandler>
+                    </TranslationProvider>
+                </Suspense>
+            </div>
+            {!startupComplete && (
+                <ChunkLoader
+                    message={localize('Preparing your trading experience...')}
+                    onAnimationComplete={() => setOrbitComplete(true)}
+                />
+            )}
+        </>
+    );
+};
+
 /**
  * Component wrapper to handle language URL parameter
  * Uses the useLanguageFromURL hook to process language switching
@@ -33,27 +81,7 @@ const routerBasename = isPreviewMode() ? PREVIEW_BASE_PATH : undefined;
 
 const router = createBrowserRouter(
     createRoutesFromElements(
-        <Route
-            path='/'
-            element={
-                <Suspense
-                    fallback={<ChunkLoader message={localize('Please wait while we connect to the server...')} />}
-                >
-                    <TranslationProvider defaultLang='EN' i18nInstance={i18nInstance}>
-                        <LanguageHandler>
-                            <StoreProvider>
-                                <LocalStorageSyncWrapper>
-                                    <RoutePromptDialog />
-                                    <CoreStoreProvider>
-                                        <Layout />
-                                    </CoreStoreProvider>
-                                </LocalStorageSyncWrapper>
-                            </StoreProvider>
-                        </LanguageHandler>
-                    </TranslationProvider>
-                </Suspense>
-            }
-        >
+        <Route path='/' element={<StartupGate />}>
             {/* All child routes will be passed as children to Layout */}
             <Route index element={<AppRoot />} />
             {/* App Builder embeds the template at /preview — render the same app shell */}

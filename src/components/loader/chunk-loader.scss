@@ -1,0 +1,67 @@
+.odt-startup {
+ position:fixed; z-index:100000; inset:0; display:grid; place-items:center; overflow:hidden;
+ min-height:100vh; min-height:100dvh; padding:1.5rem; color:#f7f4eb;
+ background:radial-gradient(ellipse at 50% 40%,rgba(21,34,61,.72) 0%,transparent 48%),linear-gradient(145deg,#050b18 0%,#071126 52%,#030813 100%);
+ isolation:isolate; font-family:Inter,system-ui,sans-serif;
+ &__ambient { position:absolute; z-index:-2; width:34rem; height:34rem; border-radius:50%; filter:blur(100px); opacity:.13; pointer-events:none;
+  &--left {top:-25rem;left:-17rem;background:#d99b36;}
+  &--right {right:-23rem;bottom:-25rem;background:#164b9b;}
+ }
+ /* Layered champagne-gold ribbons dress the open space above the orbital crest. */
+ &__top-ribbons {position:absolute;z-index:-1;top:0;left:0;width:100%;height:23%;overflow:hidden;pointer-events:none;opacity:.96;}
+ &__top-ribbon {position:absolute;display:block;height:clamp(5px,.9vw,10px);border-top:1px solid rgba(255,241,199,.92);border-bottom:1px solid rgba(116,72,20,.72);background:linear-gradient(180deg,#fff0bd 0%,#e9b64d 24%,#9d641e 52%,#f6cd70 76%,#bd812c 100%);box-shadow:0 2px 12px rgba(223,166,62,.24);}
+ &__top-ribbon--one {top:1.4rem;left:-12%;width:62%;transform:rotate(-28deg);transform-origin:left center;}
+ &__top-ribbon--two {top:3.15rem;left:-7%;width:56%;height:4px;transform:rotate(-28deg);transform-origin:left center;opacity:.78;}
+ &__top-ribbon--three {top:-1.2rem;right:-13%;width:55%;height:7px;transform:rotate(-28deg);transform-origin:right center;opacity:.84;}
+ &__top-ribbon--glint {top:4.8rem;left:12%;width:28%;height:2px;border:0;background:linear-gradient(90deg,transparent,rgba(255,224,150,.9),transparent);box-shadow:0 0 9px rgba(255,208,112,.75);transform:rotate(-28deg);opacity:.7;}
+ /* A restrained shower of softly glowing stars, drifting behind the logo. */
+ &__falling-stars {position:absolute;z-index:0;inset:0;overflow:hidden;pointer-events:none;}
+ &__star {position:absolute;top:-2.5rem;display:block;color:#f7c95f;font-size:clamp(10px,2.1vw,17px);line-height:1;text-shadow:0 0 5px rgba(255,211,111,.85),0 0 13px rgba(232,170,61,.48);opacity:0;animation:odt-star-fall var(--fall-duration,14s) linear var(--fall-delay,0s) infinite;}
+ &__star--one {left:9%;--fall-duration:15s;--fall-delay:-7s;font-size:13px;}
+ &__star--two {left:22%;--fall-duration:17s;--fall-delay:-2s;font-size:11px;}
+ &__star--three {left:37%;--fall-duration:14s;--fall-delay:-11s;font-size:15px;}
+ &__star--four {left:51%;--fall-duration:18s;--fall-delay:-5s;font-size:12px;}
+ &__star--five {left:64%;--fall-duration:16s;--fall-delay:-13s;font-size:14px;}
+ &__star--six {left:76%;--fall-duration:15s;--fall-delay:-4s;font-size:11px;}
+ &__star--seven {left:88%;--fall-duration:19s;--fall-delay:-9s;font-size:15px;}
+ &__star--eight {left:94%;--fall-duration:17s;--fall-delay:-15s;font-size:10px;}
+ &__star--nine {left:15%;--fall-duration:20s;--fall-delay:-17s;font-size:10px;}
+ &__bottom-arc {position:absolute;z-index:-1;left:-18%;bottom:-25%;width:138%;height:43%;border:1px solid rgba(224,170,69,.62);border-radius:50%;transform:rotate(-13deg);box-shadow:0 -2px 12px rgba(226,172,73,.16);pointer-events:none;}
+ &__bottom-ribbon {position:absolute;z-index:-1;left:-13%;bottom:-15%;width:86%;height:3.1rem;transform:rotate(18deg);transform-origin:left center;background:linear-gradient(180deg,rgba(255,226,151,.96) 0%,#d99b32 22%,#8b571b 48%,#f6c65f 70%,rgba(255,222,143,.9) 100%);border-top:1px solid rgba(255,238,194,.9);border-bottom:1px solid rgba(255,208,103,.5);box-shadow:0 0 18px rgba(222,157,45,.28);pointer-events:none;opacity:.9;}
+ &__gold-dust {position:absolute;z-index:-1;left:0;right:0;bottom:0;height:28%;opacity:.55;background-image:radial-gradient(circle,rgba(255,218,133,.9) 0 1px,transparent 1.7px),radial-gradient(circle,rgba(223,161,55,.8) 0 .8px,transparent 1.5px);background-size:43px 39px,67px 59px;background-position:7px 11px,24px 31px;mask-image:linear-gradient(to top,black,transparent 88%);pointer-events:none;}
+ &__content {position:relative;z-index:1;width:min(100%,43rem);display:flex;flex-direction:column;align-items:center;text-align:center;}
+ &__symbol {position:relative;box-sizing:border-box;width:min(76vw,29rem);aspect-ratio:1;margin:0 0 1.8rem;border:2px solid rgba(232,184,83,.96);border-radius:50%;background:radial-gradient(circle at 50% 48%,rgba(226,174,69,.075),transparent 62%),rgba(3,9,20,.22);box-shadow:0 0 9px rgba(244,190,83,.7),0 0 30px rgba(218,157,48,.23),inset 0 0 26px rgba(225,173,69,.07);flex:none;}
+ &__inner-ring {position:absolute;inset:9px;border:1px solid rgba(255,218,139,.28);border-radius:50%;pointer-events:none;}
+ /* Orbit timing and rotation intentionally unchanged. */
+ &__orbit {position:absolute;inset:0;border-radius:50%;transform:rotate(38deg);animation:odt-orbit 12s linear forwards;will-change:transform;}
+ &__orb {position:absolute;top:-.72rem;left:50%;width:1.45rem;height:1.45rem;transform:translateX(-50%);border:1px solid rgba(255,246,207,.95);border-radius:50%;background:radial-gradient(circle at 32% 27%,#fffde9 0%,#ffe9a2 20%,#ffc84e 52%,#c77a13 100%);box-shadow:0 0 8px 3px rgba(255,207,93,.9),0 0 22px 8px rgba(255,174,42,.48),0 0 42px 12px rgba(255,177,54,.2);}
+ &__center-glow {position:absolute;inset:23%;border-radius:50%;background:radial-gradient(circle,rgba(231,176,75,.055),transparent 70%);pointer-events:none;}
+ &__brand-lockup {position:absolute;z-index:2;top:50%;left:50%;width:88%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+ &__title {margin:0;color:#f4f2ed;font-family:Georgia,'Times New Roman',serif;font-size:clamp(1.65rem,6.4vw,3.05rem);font-weight:600;letter-spacing:.015em;line-height:1.08;white-space:nowrap;text-shadow:0 2px 14px rgba(0,0,0,.55);
+  span {color:#f2bd52;text-shadow:0 0 20px rgba(239,183,73,.32);}
+ }
+ &__eyebrow {margin-top:.78rem;color:#f0c45f;font-size:clamp(.48rem,1.9vw,.76rem);font-weight:650;letter-spacing:.24em;white-space:nowrap;text-shadow:0 1px 8px rgba(0,0,0,.7);}
+ &__subtitle {margin:1.7rem 0 .4rem;color:#f0f1f5;font-size:clamp(.95rem,3.5vw,1.12rem);font-weight:400;}
+ &__loading {display:flex;justify-content:center;width:min(100%,32rem);margin-top:.25rem;color:#9ca9bf;font-size:.82rem;}
+ &__track {width:min(100%,19rem);height:.28rem;margin-top:1.35rem;overflow:hidden;border-radius:2rem;background:rgba(155,171,201,.2);
+  span {display:block;width:40%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#b87922,#ffe08a,#f5b83e);box-shadow:0 0 12px rgba(246,190,75,.8);animation:odt-loading-sweep 2.1s ease-in-out infinite;}
+ }
+}
+.odt-startup__app-hidden {position:fixed;inset:0;overflow:hidden;visibility:hidden;pointer-events:none;}
+@keyframes odt-star-fall {
+ 0% {transform:translate3d(0,-5vh,0) rotate(0deg);opacity:0;}
+ 10% {opacity:.82;}
+ 82% {opacity:.66;}
+ 100% {transform:translate3d(18px,112vh,0) rotate(300deg);opacity:0;}
+}
+@keyframes odt-orbit {from {transform:rotate(38deg);} to {transform:rotate(398deg);}}
+@keyframes odt-loading-sweep {0% {transform:translateX(-110%);} 100% {transform:translateX(290%);}}
+@media(max-width:480px) {
+ .odt-startup {padding:1.25rem;
+  &__symbol {width:min(78vw,25rem);margin-bottom:1.45rem;}
+  &__title {font-size:clamp(1.55rem,6.1vw,2.2rem);}
+  &__eyebrow {font-size:clamp(.43rem,1.75vw,.61rem);letter-spacing:.2em;}
+  &__subtitle {margin-top:1.5rem;}
+  &__bottom-ribbon {height:2.2rem;}
+ }
+}

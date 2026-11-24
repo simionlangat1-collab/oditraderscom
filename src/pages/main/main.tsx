@@ -41,6 +41,8 @@ import { useDevice } from '@deriv-com/ui';
 import RunPanel from '../../components/run-panel';
 import ChartModal from '../chart/chart-modal';
 import Dashboard from '../dashboard';
+import TradingCenter from '../trading-center/trading-center';
+import ManualTrader from '../manual-trader/manual-trader';
 import RunStrategy from '../dashboard/run-strategy';
 import './main.scss';
 
@@ -78,7 +80,7 @@ const AppWrapper = observer(() => {
     const { clear } = summary_card;
     const { DASHBOARD, BOT_BUILDER } = DBOT_TABS;
     const init_render = React.useRef(true);
-    const hash = ['dashboard', 'bot_builder', 'chart', 'tutorial'];
+    const hash = ['dashboard', 'bot_builder', 'trading_center', 'chart', 'tutorial', 'manual_trader'];
     const { isDesktop } = useDevice();
     const location = useLocation();
     const navigate = useNavigate();
@@ -308,6 +310,12 @@ const AppWrapper = observer(() => {
     }, [active_tab]);
 
     React.useEffect(() => {
+        const isTradingCenterActive = active_tab === DBOT_TABS.TRADING_CENTER;
+        document.body.classList.toggle('trading-center-fullscreen', isTradingCenterActive);
+        return () => document.body.classList.remove('trading-center-fullscreen');
+    }, [active_tab]);
+
+    React.useEffect(() => {
         const trashcan_init_id = setTimeout(() => {
             if (active_tab === BOT_BUILDER && Blockly?.derivWorkspace?.trashcan) {
                 const trashcanY = window.innerHeight - 250;
@@ -376,7 +384,7 @@ const AppWrapper = observer(() => {
                 >
                     <div>
                         {!isDesktop && left_tab_shadow && <span className='tabs-shadow tabs-shadow--left' />}{' '}
-                        <Tabs active_index={active_tab} className='main__tabs' onTabItemClick={handleTabChange} top>
+                        <Tabs active_index={active_tab} className='main__tabs' onTabItemClick={handleTabChange} is_scrollable top>
                             <div
                                 label={
                                     <>
@@ -413,6 +421,37 @@ const AppWrapper = observer(() => {
                                             width='24px'
                                             fill='var(--text-general)'
                                         />
+                                        <Localize i18n_default_text='Trade Center' />
+                                    </>
+                                }
+                                id='id-trading-center'
+                            >
+                                <TradingCenter onExit={() => handleTabChange(DASHBOARD)} />
+                            </div>
+
+                            <div
+                                label={
+                                    <>
+                                        <LabelPairedChartLineCaptionRegularIcon
+                                            height='24px'
+                                            width='24px'
+                                            fill='var(--text-general)'
+                                        />
+                                        <Localize i18n_default_text='Manual Trader' />
+                                    </>
+                                }
+                                id='id-manual-trader'
+                            >
+                                <ManualTrader />
+                            </div>
+                            <div
+                                label={
+                                    <>
+                                        <LabelPairedChartLineCaptionRegularIcon
+                                            height='24px'
+                                            width='24px'
+                                            fill='var(--text-general)'
+                                        />
                                         <Localize i18n_default_text='Charts' />
                                     </>
                                 }
@@ -437,7 +476,7 @@ const AppWrapper = observer(() => {
                                             fill='var(--text-general)'
                                             className='icon-general-fill-g-path'
                                         />
-                                        <Localize i18n_default_text='Tutorials' />
+                                        <Localize i18n_default_text='Tutorial' />
                                     </>
                                 }
                                 id='id-tutorials'
@@ -452,6 +491,7 @@ const AppWrapper = observer(() => {
                                     </Suspense>
                                 </div>
                             </div>
+
                         </Tabs>
                         {!isDesktop && right_tab_shadow && <span className='tabs-shadow tabs-shadow--right' />}{' '}
                     </div>
@@ -459,13 +499,13 @@ const AppWrapper = observer(() => {
             </div>
             <DesktopWrapper>
                 <div className='main__run-strategy-wrapper'>
-                    <RunStrategy />
-                    <RunPanel />
+                    {active_tab === DBOT_TABS.BOT_BUILDER && <RunStrategy />}
+                    {active_tab === DBOT_TABS.BOT_BUILDER && <RunPanel />}
                 </div>
                 <ChartModal />
                 <TradingViewModal />
             </DesktopWrapper>
-            <MobileWrapper>{!is_open && <RunPanel />}</MobileWrapper>
+            <MobileWrapper>{!is_open && active_tab === DBOT_TABS.BOT_BUILDER && <RunPanel />}</MobileWrapper>
             <Dialog
                 cancel_button_text={cancel_button_text || localize('Cancel')}
                 className='dc-dialog__wrapper--fixed'
