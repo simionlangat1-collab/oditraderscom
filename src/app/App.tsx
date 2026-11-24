@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import React from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
 import { cleanupUrl, handleOAuthCallback } from '@/external/deriv-core';
@@ -17,6 +17,14 @@ import './app-root.scss';
 const Layout = lazy(() => import('../components/layout'));
 const AppRoot = lazy(() => import('./app-root'));
 
+const StartupReadySignal = ({ onReady }: { onReady: () => void }) => {
+    useEffect(() => {
+        onReady();
+    }, [onReady]);
+
+    return null;
+};
+
 /**
  * Keeps the premium startup animation visible for one complete orbital lap.
  * The dashboard is revealed only after both the app shell is ready and the
@@ -24,16 +32,9 @@ const AppRoot = lazy(() => import('./app-root'));
  */
 const StartupGate = () => {
     const [orbitComplete, setOrbitComplete] = useState(false);
-
-    // One authoritative six-second gate. The loader is mounted exactly once
-    // for this route lifetime, so the orbital animation cannot be restarted
-    // by app readiness or by a Suspense fallback.
-    useEffect(() => {
-        const timer = window.setTimeout(() => setOrbitComplete(true), 6000);
-        return () => window.clearTimeout(timer);
-    }, []);
-
-    const startupComplete = orbitComplete;
+    const [appReady, setAppReady] = useState(false);
+    const markAppReady = useCallback(() => setAppReady(true), []);
+    const startupComplete = orbitComplete && appReady;
 
     return (
         <>
@@ -46,6 +47,7 @@ const StartupGate = () => {
                                     <RoutePromptDialog />
                                     <CoreStoreProvider>
                                         <Layout />
+                                        <StartupReadySignal onReady={markAppReady} />
                                     </CoreStoreProvider>
                                 </LocalStorageSyncWrapper>
                             </StoreProvider>
@@ -54,7 +56,10 @@ const StartupGate = () => {
                 </Suspense>
             </div>
             {!startupComplete && (
-                <ChunkLoader message={localize('Preparing your trading experience...')} />
+                <ChunkLoader
+                    message={localize('Preparing your trading experience...')}
+                    onAnimationComplete={() => setOrbitComplete(true)}
+                />
             )}
         </>
     );
