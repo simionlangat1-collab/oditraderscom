@@ -1,4 +1,4 @@
-import { lazy, Suspense, useContext, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import ErrorBoundary from '@/components/error-component/error-boundary';
 import ErrorComponent from '@/components/error-component/error-component';
@@ -7,7 +7,6 @@ import { api_base } from '@/external/bot-skeleton';
 import { useStore } from '@/hooks/useStore';
 import { localize } from '@deriv-com/translations';
 import './app-root.scss';
-import { StartupReadyContext } from './App';
 
 const AppContent = lazy(() => import('./app-content'));
 
@@ -35,7 +34,6 @@ const ErrorComponentWrapper = observer(() => {
 });
 
 const AppRoot = () => {
-    const onReady = useContext(StartupReadyContext);
     const store = useStore();
     const api_base_initialized = useRef(false);
     const [is_api_initialized, setIsApiInitialized] = useState(false);
@@ -66,10 +64,6 @@ const AppRoot = () => {
         initializeApi();
         return () => clearTimeout(timeoutId);
     }, []);
-
-    useEffect(() => {
-        if (is_api_initialized) onReady?.();
-    }, [is_api_initialized, onReady]);
 
     if (!store || !is_api_initialized) return <AppRootLoader />;
 
