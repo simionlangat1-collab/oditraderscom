@@ -363,40 +363,43 @@ const ManualTrader = () => {
                 <span className={`manual-trader__connection ${connection === CONNECTION_STATUS.OPENED ? 'is-ready' : ''}`}>{connection === CONNECTION_STATUS.OPENED ? 'Deriv connected' : connection}</span>
             </header>
 
-            <ManualTraderAnalysisDashboard
-                ticks={digitTicks}
-                marketName={selectedSymbol?.display_name || symbol}
-                tickConnection={tickConnection}
-                tickError={tickError}
-                tradeResultHighlight={tradeResultHighlight}
-                onTradeResultAnimationEnd={clearTradeResultHighlight}
-                barrierDigit={prediction}
-            />
-
-            <TradeControls
-                symbols={symbols}
-                symbol={symbol}
-                contractType={contractType}
-                duration={duration}
-                stake={stake}
-                prediction={prediction}
-                currency={currency}
-                overPayout={payoutQuotes.over}
-                underPayout={payoutQuotes.under}
-                buyingSide={buyingSide}
-                buyDisabled={!socketReady || !api_base.is_authorized || !symbol || Number(stake) <= 0}
-                tradeError={tradeError}
-                onBuy={executeTrade}
-                onSymbolChange={setSymbol}
-                onContractChange={setContractType}
-                onDurationChange={setDuration}
-                onStakeChange={setStake}
-                onPredictionChange={setPrediction}
-            />
-
-            <TradeHistory trades={trades} currency={currency} />
-
-            <ManualTraderDistributionPanels ticks={digitTicks} />
+            <div className='manual-trader__layout'>
+                <div className='manual-trader__column'>
+                    <TradeControls
+                        symbols={symbols}
+                        symbol={symbol}
+                        contractType={contractType}
+                        duration={duration}
+                        stake={stake}
+                        prediction={prediction}
+                        currency={currency}
+                        overPayout={payoutQuotes.over}
+                        underPayout={payoutQuotes.under}
+                        buyingSide={buyingSide}
+                        buyDisabled={!socketReady || !api_base.is_authorized || !symbol || Number(stake) <= 0}
+                        tradeError={tradeError}
+                        onBuy={executeTrade}
+                        onSymbolChange={setSymbol}
+                        onContractChange={setContractType}
+                        onDurationChange={setDuration}
+                        onStakeChange={setStake}
+                        onPredictionChange={setPrediction}
+                    />
+                    <TradeHistory trades={trades} currency={currency} />
+                </div>
+                <div className='manual-trader__column'>
+                    <ManualTraderAnalysisDashboard
+                        ticks={digitTicks}
+                        marketName={selectedSymbol?.display_name || symbol}
+                        tickConnection={tickConnection}
+                        tickError={tickError}
+                        tradeResultHighlight={tradeResultHighlight}
+                        onTradeResultAnimationEnd={clearTradeResultHighlight}
+                        barrierDigit={prediction}
+                    />
+                    <ManualTraderDistributionPanels ticks={digitTicks} />
+                </div>
+            </div>
         </main>
     );
 };
