@@ -463,6 +463,14 @@ const ManualTrader = () => {
                                     recoveryStatusText === 'won' ? 'won'
                                         : recoveryStatusText === 'lost' ? 'lost'
                                             : recoveryStatusText === 'sold' ? 'sold' : 'open';
+
+                                // Once the single recovery contract settles, restore the
+                                // original contract and barrier selected for the manual trade.
+                                if (recoveryStatus === 'won' || recoveryStatus === 'lost') {
+                                    setContractType(selectedContract);
+                                    setPrediction(prediction);
+                                }
+
                                 const recoveryProfit = Number(recoveryContract.profit);
                                 setTrades(previous => previous.map(item => item.contract_id === recoveryContractId ? {
                                     ...item,
