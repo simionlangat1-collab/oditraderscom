@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "private": true,
   "engines": {
-    "node": "20.x"
+    "node": "26.x"
   },
   "scripts": {
     "dev": "rsbuild dev --port 4003",
@@ -114,6 +114,7 @@
     "stylelint-config-standard-scss": "^13.1.0",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "@deriv/api-types": "^1.0.2463"
   }
 }
