@@ -19,36 +19,30 @@
     }
 }
 
-
-/* Dedicated Trading Center presentation: hide the surrounding app chrome. */
+/* Keep the app header and dashboard navigation available in Trading Center. */
 body.trading-center-fullscreen {
-    overflow: hidden !important;
+    overflow: auto !important;
 
     .layout {
-        height: 100dvh !important;
         min-height: 100dvh;
-        overflow: hidden;
-    }
-
-    .layout > .deriv-header,
-    .layout > footer {
-        display: none !important;
+        height: auto;
+        overflow: visible;
     }
 
     .main-body {
         flex: 1 1 auto !important;
         min-height: 0 !important;
-        overflow: hidden !important;
+        overflow: visible !important;
     }
 
     .main {
-        height: 100dvh !important;
-        max-height: 100dvh !important;
+        height: auto !important;
+        max-height: none !important;
         min-height: 0 !important;
         padding: 0 !important;
     }
 
     .main .dc-tabs__list {
-        display: none !important;
+        display: flex !important;
     }
 }
