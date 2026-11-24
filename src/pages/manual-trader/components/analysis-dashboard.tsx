@@ -4,6 +4,8 @@ import '../analysis-tool.scss';
 type TTick = { quote: number; epoch: number; digit: number };
 type Props = {
     ticks: TTick[];
+    selectedWindow: number;
+    onWindowChange: (window: number) => void;
     marketName: string;
     tickConnection: 'connecting' | 'connected' | 'disconnected';
     tickError?: string;
@@ -12,9 +14,9 @@ type Props = {
     onTradeResultAnimationEnd?: (key: string) => void;
 };
 
-const TICK_WINDOW = 1000;
+const TICK_WINDOWS = [15, 30, 60, 120, 1000];
 
-export const ManualTraderAnalysisDashboard = ({ ticks, marketName, tickConnection, tickError, tradeResultHighlight, barrierDigit, onTradeResultAnimationEnd }: Props) => {
+export const ManualTraderAnalysisDashboard = ({ ticks, selectedWindow, onWindowChange, marketName, tickConnection, tickError, tradeResultHighlight, barrierDigit, onTradeResultAnimationEnd }: Props) => {
     const frequencies = useMemo(
         () => Array.from({ length: 10 }, (_, digit) => {
             const count = ticks.filter(tick => tick.digit === digit).length;
@@ -37,7 +39,7 @@ export const ManualTraderAnalysisDashboard = ({ ticks, marketName, tickConnectio
                 <div>
                     <span className='analysis-tool__eyebrow'>ODI TRADERS · MARKET INTELLIGENCE</span>
                     <h1>Live Market Analysis</h1>
-                    <p>{marketName || 'Selected Volatility Index'} · rolling latest {TICK_WINDOW.toLocaleString()} ticks</p>
+                    <p>{marketName || 'Selected Volatility Index'} · rolling latest {selectedWindow.toLocaleString()}</p>
                 </div>
                 <div className={`analysis-tool__status analysis-tool__status--${tickConnection}`}>
                     <span />
@@ -69,9 +71,22 @@ export const ManualTraderAnalysisDashboard = ({ ticks, marketName, tickConnectio
                 <div className='analysis-tool__section-heading'>
                     <div>
                         <h2>Digit frequency</h2>
-                        <p>Distribution across the latest {TICK_WINDOW.toLocaleString()} ticks</p>
+                        <div className='analysis-tool__window-selector'>
+                            <span>Distribution across the latest:</span>
+                            <div className='analysis-tool__window-options' role='group' aria-label='Choose analysis tick window'>
+                                {TICK_WINDOWS.map(windowSize => (
+                                    <button
+                                        key={windowSize}
+                                        type='button'
+                                        className={`analysis-tool__window-button ${selectedWindow === windowSize ? 'is-selected' : ''}`}
+                                        aria-pressed={selectedWindow === windowSize}
+                                        onClick={() => onWindowChange(windowSize)}
+                                    >{windowSize}</button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                    <span>{ticks.length.toLocaleString()} / {TICK_WINDOW.toLocaleString()} samples</span>
+                    <span className='analysis-tool__selected-window' aria-live='polite'>{selectedWindow}</span>
                 </div>
                 <div className='analysis-tool__digit-grid'>
                     {frequencies.map(item => (
