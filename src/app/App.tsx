@@ -17,6 +17,8 @@ import './app-root.scss';
 const Layout = lazy(() => import('../components/layout'));
 const AppRoot = lazy(() => import('./app-root'));
 
+export const StartupReadyContext = createContext<(() => void) | null>(null);
+
 /**
  * Keeps the premium startup animation visible for one complete orbital lap.
  * The dashboard is revealed only after both the app shell is ready and the
@@ -34,7 +36,8 @@ const StartupGate = () => {
     }, []);
 
     return (
-        <>
+        <StartupReadyContext.Provider value={markAppReady}>
+            <>
             <div className={startupComplete ? undefined : 'odt-startup__app-hidden'}>
                 <Suspense fallback={null}>
                     <TranslationProvider defaultLang='EN' i18nInstance={i18nInstance}>
@@ -57,7 +60,8 @@ const StartupGate = () => {
                     onAnimationComplete={() => setOrbitComplete(true)}
                 />
             )}
-        </>
+            </>
+        </StartupReadyContext.Provider>
     );
 };
 
