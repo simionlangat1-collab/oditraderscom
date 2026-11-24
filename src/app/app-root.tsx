@@ -65,6 +65,12 @@ const AppRoot = () => {
         return () => clearTimeout(timeoutId);
     }, []);
 
+    useEffect(() => {
+        if (is_api_initialized) {
+            window.dispatchEvent(new Event('odt-app-root-ready'));
+        }
+    }, [is_api_initialized]);
+
     if (!store || !is_api_initialized) return <AppRootLoader />;
 
     return (
