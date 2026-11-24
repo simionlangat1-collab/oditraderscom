@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
-import { addComma, getCurrencyDisplayCode, getDecimalPlaces } from '@/components/shared';
+import { addComma, getCurrencyDisplayCode, getDecimalPlaces, isProduction } from '@/components/shared';
+import { CurrencyIcon } from '@/components/currency/currency-icon';
+import { getAuthInfo } from '@/external/deriv-core/auth/storage';
+import { setAccountList } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
+import { DerivWSAccountsService } from '@/services/derivws-accounts.service';
 import Text from '@/components/shared_ui/text';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 import { useApiBase } from '@/hooks/useApiBase';
@@ -14,6 +18,7 @@ import './account-switcher.scss';
 
 const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [resettingAccount, setResettingAccount] = useState<string | null>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const { accountList, activeLoginid } = useApiBase();
     const { client, run_panel } = useStore() ?? {};
@@ -22,21 +27,21 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
     const isSingleAccount = !accountList || accountList.length <= 1;
 
     useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-                setIsOpen(false);
-            }
-        };
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') setIsOpen(false);
         };
-        document.addEventListener('mousedown', handleClickOutside);
         document.addEventListener('keydown', handleKeyDown);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('keydown', handleKeyDown);
-        };
+        return () => document.removeEventListener('keydown', handleKeyDown);
     }, []);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [isOpen]);
 
     const toggleDropdown = useCallback(() => {
         if (is_bot_running || isSingleAccount) return;
@@ -50,6 +55,63 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
             setIsOpen(false);
         },
         [client]
+    );
+
+    const handleResetDemoBalance = useCallback(
+        async (loginid: string) => {
+            if (resettingAccount || is_bot_running) return;
+            const confirmed = window.confirm('Reset this demo account balance to 10,000 USD?');
+            if (!confirmed) return;
+
+            setResettingAccount(loginid);
+            try {
+                const authInfo = getAuthInfo();
+                const accessToken = authInfo?.access_token;
+                if (typeof accessToken !== 'string' || !accessToken) {
+                    throw new Error('Your Deriv session token could not be found or has expired. Please log in again.');
+                }
+
+                const environment = isProduction() ? 'production' : 'staging';
+                const baseURL = brandConfig.platform.derivws.url[environment];
+                const optionsDir = brandConfig.platform.derivws.directories.options;
+                const response = await fetch(
+                    `${baseURL}${optionsDir}accounts/${encodeURIComponent(loginid)}/reset-demo-balance`,
+                    {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${accessToken}` },
+                    }
+                );
+
+                if (!response.ok) {
+                    let message = 'Deriv could not reset this demo balance. Please try again.';
+                    try {
+                        const body = await response.json();
+                        message = body?.errors?.[0]?.message || message;
+                    } catch {
+                        // Keep the friendly fallback message.
+                    }
+                    throw new Error(message);
+                }
+
+                DerivWSAccountsService.clearCache();
+                const refreshedAccounts = await DerivWSAccountsService.fetchAccountsList(accessToken);
+                const updatedList = refreshedAccounts
+                    .filter(account => !account.status || account.status === 'active')
+                    .map(account => ({
+                        balance: Number(account.balance) || 0,
+                        currency: account.currency || 'USD',
+                        is_virtual: account.account_type === 'demo' ? 1 : 0,
+                        loginid: account.account_id,
+                    }));
+                setAccountList(updatedList);
+                localStorage.setItem('client_account_details', JSON.stringify(updatedList));
+            } catch (error) {
+                window.alert(error instanceof Error ? error.message : 'Unable to reset demo balance.');
+            } finally {
+                setResettingAccount(null);
+            }
+        },
+        [is_bot_running, resettingAccount]
     );
 
     const formattedAccounts = useMemo(() => {
@@ -79,7 +141,7 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                     role={showChevron ? 'button' : undefined}
                     tabIndex={showChevron ? 0 : -1}
                     aria-expanded={showChevron ? isOpen : undefined}
-                    aria-haspopup={showChevron ? 'listbox' : undefined}
+                    aria-haspopup={showChevron ? 'dialog' : undefined}
                     className={classNames('acc-info', {
                         'acc-info--is-virtual': isVirtual,
                         'acc-info--interactive': showChevron,
@@ -93,9 +155,19 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                     }}
                 >
                     <span className='acc-info__id' aria-hidden='true'></span>
+                    <span
+                        className='acc-info__flag'
+                        role='img'
+                        aria-label={isVirtual ? 'Demo account icon' : 'United States flag'}
+                    >
+                        {isVirtual ? (
+                            <CurrencyIcon currency={currency} isVirtual={isVirtual} />
+                        ) : (
+                            <span style={{ fontSize: '1.7rem' }}>🇺🇸</span>
+                        )}
+                    </span>
                     <div className='acc-info__content'>
                         <div className='acc-info__account-type-header'>
-                            <span className='acc-info__flag' role='img' aria-label='United States flag'>🇺🇸</span>
                             <Text as='p' size='xs' className='acc-info__account-type'>
                                 {isVirtual ? (
                                     <Localize i18n_default_text='Demo account' />
@@ -141,46 +213,85 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
                 </div>
             </AccountInfoWrapper>
             {isOpen && (
-                <div className='acc-dropdown' role='listbox'>
-                    {formattedAccounts.map(account => (
-                        <div
-                            key={account.loginid}
-                            role='option'
-                            aria-selected={account.isActive}
-                            tabIndex={0}
-                            className={classNames('acc-dropdown__account', {
-                                'acc-dropdown__account--selected': account.isActive,
-                                'acc-dropdown__account--virtual': account.isVirtual,
-                            })}
-                            onClick={() => !account.isActive && handleAccountSelect(account.loginid)}
-                            onKeyDown={e => {
-                                if (!account.isActive && (e.key === 'Enter' || e.key === ' ')) {
-                                    e.preventDefault();
-                                    handleAccountSelect(account.loginid);
-                                }
-                            }}
-                        >
-                            <Text
-                                size='xxxs'
-                                className={classNames('acc-dropdown__account-type', {
-                                    'acc-dropdown__account-type--virtual': account.isVirtual,
-                                })}
+                <div
+                    className='acc-modal'
+                    role='dialog'
+                    aria-modal='true'
+                    aria-label='Switch account'
+                    onMouseDown={e => {
+                        if (e.target === e.currentTarget) setIsOpen(false);
+                    }}
+                >
+                    <div className='acc-modal__card'>
+                        <div className='acc-modal__header'>
+                            <div>
+                                <p className='acc-modal__eyebrow'>ACCOUNT</p>
+                                <h2>Switch account</h2>
+                            </div>
+                            <button
+                                type='button'
+                                className='acc-modal__close'
+                                aria-label='Close account switcher'
+                                onClick={() => setIsOpen(false)}
                             >
-                                {account.isVirtual ? (
-                                    <Localize i18n_default_text='Demo account' />
-                                ) : (
-                                    <Localize i18n_default_text='Real account' />
-                                )}
-                            </Text>
-                            <Text size='xs' weight='bold' className='acc-dropdown__balance'>
-                                {account.currency ? (
-                                    `${account.balance} ${getCurrencyDisplayCode(account.currency)}`
-                                ) : (
-                                    <Localize i18n_default_text='No currency assigned' />
-                                )}
-                            </Text>
+                                ×
+                            </button>
                         </div>
-                    ))}
+
+                        <div className='acc-modal__accounts' role='listbox' aria-label='Accounts'>
+                            {formattedAccounts.map(account => (
+                                <div
+                                    key={account.loginid}
+                                    role='option'
+                                    aria-selected={account.isActive}
+                                    tabIndex={0}
+                                    className={classNames('acc-modal__account', {
+                                        'acc-modal__account--selected': account.isActive,
+                                        'acc-modal__account--virtual': account.isVirtual,
+                                    })}
+                                    onClick={() => !account.isActive && handleAccountSelect(account.loginid)}
+                                    onKeyDown={e => {
+                                        if (!account.isActive && (e.key === 'Enter' || e.key === ' ')) {
+                                            e.preventDefault();
+                                            handleAccountSelect(account.loginid);
+                                        }
+                                    }}
+                                >
+                                    <span className='acc-modal__flag' aria-hidden='true'>
+                                        {account.isVirtual ? (
+                                            <CurrencyIcon currency={account.currency} isVirtual={account.isVirtual} />
+                                        ) : (
+                                            '🇺🇸'
+                                        )}
+                                    </span>
+                                    <div className='acc-modal__account-info'>
+                                        <span className='acc-modal__account-type'>
+                                            {account.isVirtual ? 'Demo account' : 'Real account'}
+                                        </span>
+                                        <span className='acc-modal__balance'>
+                                            {account.currency
+                                                ? account.balance + ' ' + getCurrencyDisplayCode(account.currency)
+                                                : 'No currency assigned'}
+                                        </span>
+                                    </div>
+                                    {account.isVirtual && (
+                                        <button
+                                            type='button'
+                                            className='acc-modal__reset'
+                                            disabled={!!resettingAccount || is_bot_running}
+                                            onClick={event => {
+                                                event.stopPropagation();
+                                                void handleResetDemoBalance(account.loginid);
+                                            }}
+                                        >
+                                            {resettingAccount === account.loginid ? 'Resetting…' : 'Reset Demo Balance'}
+                                        </button>
+                                    )}
+                                    {account.isActive && <span className='acc-modal__check'>✓</span>}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
