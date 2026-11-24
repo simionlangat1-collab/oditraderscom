@@ -24,12 +24,16 @@ const AppRoot = lazy(() => import('./app-root'));
  */
 const StartupGate = () => {
     const [orbitComplete, setOrbitComplete] = useState(false);
-    const startupComplete = orbitComplete;
 
+    // One authoritative six-second gate. The loader is mounted exactly once
+    // for this route lifetime, so the orbital animation cannot be restarted
+    // by app readiness or by a Suspense fallback.
     useEffect(() => {
         const timer = window.setTimeout(() => setOrbitComplete(true), 6000);
         return () => window.clearTimeout(timer);
     }, []);
+
+    const startupComplete = orbitComplete;
 
     return (
         <>
@@ -50,9 +54,7 @@ const StartupGate = () => {
                 </Suspense>
             </div>
             {!startupComplete && (
-                <ChunkLoader
-                    message={localize('Preparing your trading experience...')}
-                />
+                <ChunkLoader message={localize('Preparing your trading experience...')} />
             )}
         </>
     );
