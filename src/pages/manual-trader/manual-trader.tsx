@@ -35,6 +35,8 @@ const ManualTrader = () => {
     const analysisTicks = useMemo(() => digitTicks.slice(-selectedAnalysisWindow), [digitTicks, selectedAnalysisWindow]);
     const [tickConnection, setTickConnection] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
     const [socketReady, setSocketReady] = useState(false);
+    const [socketGeneration, setSocketGeneration] = useState(0);
+    const [tickStreamRestartKey, setTickStreamRestartKey] = useState(0);
     const [tickError, setTickError] = useState('');
     const [payoutQuotes, setPayoutQuotes] = useState<PayoutQuotes>({ over: null, under: null });
     const [buyingSide, setBuyingSide] = useState<TradeSide | null>(null);
@@ -104,7 +106,9 @@ const ManualTrader = () => {
 
     useEffect(() => {
         const updateSocketReady = (status: string) => {
-            setSocketReady(status === CONNECTION_STATUS.OPENED);
+            const isOpen = status === CONNECTION_STATUS.OPENED;
+            setSocketReady(isOpen);
+            if (isOpen) setSocketGeneration(previous => previous + 1);
         };
         const statusSubscription = connectionStatus$.subscribe(updateSocketReady);
         updateSocketReady(connectionStatus$.value);
@@ -191,7 +195,22 @@ const ManualTrader = () => {
             messageSubscription?.unsubscribe?.();
             if (subscriptionId) api.send({ forget: subscriptionId });
         };
-    }, [symbol, socketReady]);
+    }, [symbol, socketReady, socketGeneration, tickStreamRestartKey]);
+
+    // Watchdog: if the WebSocket reports OPEN but no tick has arrived for a while,
+    // force this market subscription to be rebuilt instead of leaving the UI stuck.
+    useEffect(() => {
+        const watchdog = window.setInterval(() => {
+            const api = api_base.api as any;
+            if (!socketReady || !symbol || !api || api.connection?.readyState !== 1) return;
+            const latestEpoch = latestDigitTickRef.current?.epoch || 0;
+            const nowEpoch = Math.floor(Date.now() / 1000);
+            if (!latestEpoch || nowEpoch - latestEpoch > 10) {
+                setTickStreamRestartKey(previous => previous + 1);
+            }
+        }, 5000);
+        return () => window.clearInterval(watchdog);
+    }, [socketReady, symbol]);
 
     useEffect(() => {
         let active = true;
