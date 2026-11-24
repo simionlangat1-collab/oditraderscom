@@ -26,6 +26,11 @@ const StartupGate = () => {
     const [orbitComplete, setOrbitComplete] = useState(false);
     const startupComplete = orbitComplete;
 
+    useEffect(() => {
+        const timer = window.setTimeout(() => setOrbitComplete(true), 6000);
+        return () => window.clearTimeout(timer);
+    }, []);
+
     return (
         <>
             <div className={startupComplete ? undefined : 'odt-startup__app-hidden'}>
