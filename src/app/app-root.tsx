@@ -35,6 +35,7 @@ const ErrorComponentWrapper = observer(() => {
 });
 
 const AppRoot = () => {
+    const onReady = useContext(StartupReadyContext);
     const store = useStore();
     const api_base_initialized = useRef(false);
     const [is_api_initialized, setIsApiInitialized] = useState(false);
@@ -67,12 +68,8 @@ const AppRoot = () => {
     }, []);
 
     useEffect(() => {
-        if (!is_api_initialized) return;
-        const readyTimer = window.setTimeout(() => {
-            window.dispatchEvent(new Event('odt-app-root-ready'));
-        }, 0);
-        return () => window.clearTimeout(readyTimer);
-    }, [is_api_initialized]);
+        if (is_api_initialized) onReady?.();
+    }, [is_api_initialized, onReady]);
 
     if (!store || !is_api_initialized) return <AppRootLoader />;
 
