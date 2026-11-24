@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import React from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
 import { cleanupUrl, handleOAuthCallback } from '@/external/deriv-core';
@@ -25,8 +25,13 @@ const AppRoot = lazy(() => import('./app-root'));
 const StartupGate = () => {
     const [orbitComplete, setOrbitComplete] = useState(false);
     const [appReady, setAppReady] = useState(false);
-    const markAppReady = useCallback(() => setAppReady(true), []);
     const startupComplete = orbitComplete && appReady;
+
+    useEffect(() => {
+        const handleAppRootReady = () => setAppReady(true);
+        window.addEventListener('odt-app-root-ready', handleAppRootReady);
+        return () => window.removeEventListener('odt-app-root-ready', handleAppRootReady);
+    }, []);
 
     return (
         <>
@@ -74,9 +79,9 @@ const router = createBrowserRouter(
     createRoutesFromElements(
         <Route path='/' element={<StartupGate />}>
             {/* All child routes will be passed as children to Layout */}
-            <Route index element={<AppRoot onReady={markAppReady} />} />
+            <Route index element={<AppRoot />} />
             {/* App Builder embeds the template at /preview — render the same app shell */}
-            <Route path='preview' element={<AppRoot onReady={markAppReady} />} />
+            <Route path='preview' element={<AppRoot />} />
         </Route>
     ),
     { basename: routerBasename }
