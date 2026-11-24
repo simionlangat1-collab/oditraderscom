@@ -61,8 +61,8 @@ const ManualTrader = () => {
         try {
             if (!api_base.api) return;
             const available = api_base.active_symbols.length ? api_base.active_symbols : await api_base.getActiveSymbols();
-            const volatility = (available || [])
-                .filter((item: any) => item.market === 'synthetic_index' && item.exchange_is_open && !item.is_trading_suspended)
+            const orderedMarkets = (available || [])
+                .filter((item: any) => item.exchange_is_open && !item.is_trading_suspended)
                 .map((item: any) => ({
                     symbol: item.symbol,
                     display_name: item.display_name || item.symbol,
@@ -70,9 +70,25 @@ const ManualTrader = () => {
                     exchange_is_open: item.exchange_is_open,
                     is_trading_suspended: item.is_trading_suspended,
                 }))
-                .sort((a: ManualMarketSymbol, b: ManualMarketSymbol) => a.display_name.localeCompare(b.display_name));
-            setSymbols(volatility);
-            setSymbol(current => volatility.some(item => item.symbol === current) ? current : volatility[0]?.symbol || '');
+                .sort((a: ManualMarketSymbol, b: ManualMarketSymbol) => {
+                    const aIsVolatility = a.market === 'synthetic_index';
+                    const bIsVolatility = b.market === 'synthetic_index';
+
+                    // Keep all Volatility Indices at the top. Within that group,
+                    // put the regular indices before their 1-second variants.
+                    if (aIsVolatility !== bIsVolatility) return aIsVolatility ? -1 : 1;
+
+                    if (aIsVolatility && bIsVolatility) {
+                        const aIsOneSecond = /\\(1s\\)/i.test(a.display_name);
+                        const bIsOneSecond = /\\(1s\\)/i.test(b.display_name);
+                        if (aIsOneSecond !== bIsOneSecond) return aIsOneSecond ? 1 : -1;
+                    }
+
+                    return a.display_name.localeCompare(b.display_name, undefined, { numeric: true, sensitivity: 'base' });
+                });
+
+            setSymbols(orderedMarkets);
+            setSymbol(current => orderedMarkets.some(item => item.symbol === current) ? current : orderedMarkets[0]?.symbol || '');
         } catch {
             setSymbols([]);
         }
