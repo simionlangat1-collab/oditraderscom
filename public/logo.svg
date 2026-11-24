@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">ODI Traders gold mark</title>
+  <desc id="desc">Premium geometric gold abstract symbol for ODI Traders</desc>
+  <defs>
+    <linearGradient id="gold" x1="18" y1="16" x2="110" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF3B0"/>
+      <stop offset="0.28" stop-color="#F6D365"/>
+      <stop offset="0.62" stop-color="#D4A017"/>
+      <stop offset="1" stop-color="#8F6500"/>
+    </linearGradient>
+    <linearGradient id="gold2" x1="30" y1="30" x2="100" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFE99A"/>
+      <stop offset="0.5" stop-color="#C99719"/>
+      <stop offset="1" stop-color="#F4D35E"/>
+    </linearGradient>
+  </defs>
+  <path d="M64 8 112 36v56l-48 28L16 92V36L64 8Z" fill="none" stroke="url(#gold)" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M40 78V50l24-14 24 14v28L64 92 40 78Z" fill="none" stroke="url(#gold2)" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M48 73V55l16-9 16 9v18l-16 9-16-9Z" fill="url(#gold)" opacity=".16"/>
+  <path d="m48 73 16-9 16 9" fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m64 64 16-9" fill="none" stroke="url(#gold2)" stroke-width="5" stroke-linecap="round"/>
+</svg>
