@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import '../../analysis-tool/analysis-tool.scss';
+import '../analysis-tool.scss';
 
 type TTick = { quote: number; epoch: number; digit: number };
 type Props = {
