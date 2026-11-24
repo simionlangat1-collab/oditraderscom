@@ -45,6 +45,7 @@ const ManualTrader = () => {
     const [tradeNotification, setTradeNotification] = useState<TradeNotification | null>(null);
     const notificationTimer = useRef<number | null>(null);
     const completedContracts = useRef(new Set<number>());
+    const recoveryStartedContracts = useRef(new Set<number>());
     const latestDigitTickRef = useRef<TDigitTick | null>(null);
     const buyLock = useRef(false);
     const accountKey = String((api_base.account_info as any)?.loginid || 'guest');
@@ -397,6 +398,116 @@ const ManualTrader = () => {
                     setTradeNotification({ status, profit, currency, key: resultKey });
                     if (notificationTimer.current !== null) window.clearTimeout(notificationTimer.current);
                     notificationTimer.current = window.setTimeout(() => setTradeNotification(null), 5000);
+                }
+
+                // One-step 1.5x recovery is limited to the exact Over 2 / Under 7 pair.
+                // A losing manual Over 2 buys one Under 7; a losing manual Under 7 buys one Over 2.
+                // Recovery contracts are explicitly marked and can never trigger another recovery.
+                const isRecoveryPair =
+                    !record.is_recovery &&
+                    ((selectedContract === 'DIGITOVER' && prediction === 2) ||
+                        (selectedContract === 'DIGITUNDER' && prediction === 7));
+                if (status === 'lost' && isRecoveryPair && !recoveryStartedContracts.current.has(contractId)) {
+                    recoveryStartedContracts.current.add(contractId);
+                    const recoveryContractType: ManualContractType =
+                        selectedContract === 'DIGITOVER' ? 'DIGITUNDER' : 'DIGITOVER';
+                    const recoveryPrediction = selectedContract === 'DIGITOVER' ? 7 : 2;
+                    const recoveryAmount = Number((amount * 1.5).toFixed(2));
+                    const recoverySide: TradeSide = selectedContract === 'DIGITOVER' ? 'under' : 'over';
+
+                    void (async () => {
+                        buyLock.current = true;
+                        setBuyingSide(recoverySide);
+                        setTradeError('');
+                        try {
+                            if (!api_base.api || !api_base.is_authorized) {
+                                throw new Error('Deriv authorization was lost before the recovery purchase.');
+                            }
+                            const recoveryProposal = await manualTradeService.getProposal({
+                                symbol,
+                                contractType: recoveryContractType,
+                                amount: recoveryAmount,
+                                currency,
+                                duration,
+                                prediction: recoveryPrediction,
+                            });
+                            const recoveryPurchase = await manualTradeService.buy(
+                                recoveryProposal.id,
+                                recoveryProposal.ask_price
+                            );
+                            const recoveryContractId = Number(recoveryPurchase.contract_id);
+                            const recoveryRecord: ManualTradeRecord = {
+                                contract_id: recoveryContractId,
+                                contract_type: recoveryContractType,
+                                symbol,
+                                symbol_name: selectedSymbol?.display_name || symbol,
+                                buy_price: Number(recoveryPurchase.buy_price ?? recoveryProposal.ask_price),
+                                payout: recoveryProposal.payout,
+                                currency,
+                                status: 'open',
+                                purchase_time: Date.now(),
+                                is_recovery: true,
+                                recovery_for: contractId,
+                            };
+
+                            // Reflect the automatically selected opposite contract in the controls.
+                            setContractType(recoveryContractType);
+                            setPrediction(recoveryPrediction);
+                            setTrades(previous => [recoveryRecord, ...previous]);
+
+                            void manualTradeService.observeContract(recoveryContractId, recoveryContract => {
+                                const recoveryStatusText = String(recoveryContract.status || 'open');
+                                const recoveryStatus: ManualTradeRecord['status'] =
+                                    recoveryStatusText === 'won' ? 'won'
+                                        : recoveryStatusText === 'lost' ? 'lost'
+                                            : recoveryStatusText === 'sold' ? 'sold' : 'open';
+                                const recoveryProfit = Number(recoveryContract.profit);
+                                setTrades(previous => previous.map(item => item.contract_id === recoveryContractId ? {
+                                    ...item,
+                                    status: recoveryStatus,
+                                    ...(Number.isFinite(recoveryProfit) ? { profit: recoveryProfit } : {}),
+                                    ...(recoveryContract.entry_spot !== undefined ? { entry_tick: recoveryContract.entry_spot } : recoveryContract.entry_tick !== undefined ? { entry_tick: recoveryContract.entry_tick } : {}),
+                                    ...(recoveryContract.exit_spot !== undefined ? { exit_tick: recoveryContract.exit_spot } : recoveryContract.exit_tick !== undefined ? { exit_tick: recoveryContract.exit_tick } : {}),
+                                } : item));
+
+                                const recoveryResultSpot = recoveryContract.exit_spot ?? recoveryContract.exit_tick ?? recoveryContract.current_spot;
+                                if ((recoveryStatus === 'won' || recoveryStatus === 'lost') &&
+                                    Number.isFinite(recoveryProfit) &&
+                                    recoveryResultSpot !== undefined &&
+                                    !completedContracts.current.has(recoveryContractId)) {
+                                    completedContracts.current.add(recoveryContractId);
+                                    const exitPrecision = (api_base.pip_sizes as Record<string, number>)?.[symbol];
+                                    const resultDigit = getLastDigit(recoveryResultSpot, exitPrecision);
+                                    const resultKey = `${recoveryContractId}-${recoveryStatus}-${String(recoveryResultSpot)}-${Date.now()}`;
+                                    setTradeResultHighlight({
+                                        digit: resultDigit,
+                                        status: recoveryStatus,
+                                        profit: recoveryProfit,
+                                        currency,
+                                        key: resultKey,
+                                    });
+                                    setTradeNotification({
+                                        status: recoveryStatus,
+                                        profit: recoveryProfit,
+                                        currency,
+                                        key: resultKey,
+                                    });
+                                    if (notificationTimer.current !== null) window.clearTimeout(notificationTimer.current);
+                                    notificationTimer.current = window.setTimeout(() => setTradeNotification(null), 5000);
+                                }
+                            }).catch(error => {
+                                setTradeError(error instanceof Error
+                                    ? `Recovery contract opened, but its updates could not be received: ${error.message}`
+                                    : 'Recovery contract opened, but its updates could not be received.');
+                            });
+                        } catch (error: any) {
+                            const message = error?.error?.message || error?.message || 'Deriv rejected the recovery purchase.';
+                            setTradeError(`Automatic recovery failed: ${message}`);
+                        } finally {
+                            buyLock.current = false;
+                            setBuyingSide(null);
+                        }
+                    })();
                 }
             }).catch(error => {
                 setTradeError(error instanceof Error ? error.message : 'Trade opened, but contract updates could not be received.');
