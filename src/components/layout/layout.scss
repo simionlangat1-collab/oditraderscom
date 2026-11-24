@@ -18,31 +18,3 @@
         }
     }
 }
-
-/* Keep the app header and dashboard navigation available in Trading Center. */
-body.trading-center-fullscreen {
-    overflow: auto !important;
-
-    .layout {
-        min-height: 100dvh;
-        height: auto;
-        overflow: visible;
-    }
-
-    .main-body {
-        flex: 1 1 auto !important;
-        min-height: 0 !important;
-        overflow: visible !important;
-    }
-
-    .main {
-        height: auto !important;
-        max-height: none !important;
-        min-height: 0 !important;
-        padding: 0 !important;
-    }
-
-    .main .dc-tabs__list {
-        display: flex !important;
-    }
-}
