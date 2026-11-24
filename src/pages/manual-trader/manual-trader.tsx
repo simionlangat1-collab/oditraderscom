@@ -64,7 +64,14 @@ const ManualTrader = () => {
             if (!api_base.api) return;
             const available = api_base.active_symbols.length ? api_base.active_symbols : await api_base.getActiveSymbols();
             const orderedMarkets = (available || [])
-                .filter((item: any) => item.exchange_is_open && !item.is_trading_suspended)
+                // Manual Trader is intentionally restricted to Volatility Indices.
+                // Do not load/display Forex, Crypto, Commodities, Boom/Crash, etc.
+                .filter(
+                    (item: any) =>
+                        item.market === 'synthetic_index' &&
+                        item.exchange_is_open &&
+                        !item.is_trading_suspended
+                )
                 .map((item: any) => ({
                     symbol: item.symbol,
                     display_name: item.display_name || item.symbol,
