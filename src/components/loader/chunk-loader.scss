@@ -33,7 +33,7 @@
  &__symbol {position:relative;box-sizing:border-box;width:min(76vw,29rem);aspect-ratio:1;margin:0 0 1.8rem;border:2px solid rgba(232,184,83,.96);border-radius:50%;background:radial-gradient(circle at 50% 48%,rgba(226,174,69,.075),transparent 62%),rgba(3,9,20,.22);box-shadow:0 0 9px rgba(244,190,83,.7),0 0 30px rgba(218,157,48,.23),inset 0 0 26px rgba(225,173,69,.07);flex:none;}
  &__inner-ring {position:absolute;inset:9px;border:1px solid rgba(255,218,139,.28);border-radius:50%;pointer-events:none;}
  /* Orbit timing and rotation intentionally unchanged. */
- &__orbit {position:absolute;inset:0;border-radius:50%;transform:rotate(38deg);animation:odt-orbit 6s linear forwards;will-change:transform;}
+ &__orbit {position:absolute;inset:0;border-radius:50%;transform:rotate(38deg);animation:odt-orbit 12s linear forwards;will-change:transform;}
  &__orb {position:absolute;top:-.72rem;left:50%;width:1.45rem;height:1.45rem;transform:translateX(-50%);border:1px solid rgba(255,246,207,.95);border-radius:50%;background:radial-gradient(circle at 32% 27%,#fffde9 0%,#ffe9a2 20%,#ffc84e 52%,#c77a13 100%);box-shadow:0 0 8px 3px rgba(255,207,93,.9),0 0 22px 8px rgba(255,174,42,.48),0 0 42px 12px rgba(255,177,54,.2);}
  &__center-glow {position:absolute;inset:23%;border-radius:50%;background:radial-gradient(circle,rgba(231,176,75,.055),transparent 70%);pointer-events:none;}
  &__brand-lockup {position:absolute;z-index:2;top:50%;left:50%;width:88%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
