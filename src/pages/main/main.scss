@@ -800,6 +800,13 @@
  */
 @include mobile-or-tablet-screen {
     .main__container {
+        // Keep the dashboard tab strip above Blockly's absolutely positioned workspace.
+        // The Bot Builder canvas otherwise paints over the navigation on mobile.
+        .dc-tabs__list {
+            position: relative !important;
+            z-index: 20 !important;
+        }
+
         .dc-themed-scrollbars-wrapper {
             width: 100%;
             max-width: 100%;
