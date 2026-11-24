@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
-import { doUntilDone } from '@/external/bot-skeleton/services/tradeEngine/utils/helpers';
 import { CONNECTION_STATUS, connectionStatus$ } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { manualTradeService } from './services/manual-trade-service';
 import { TradeControls } from './components/trade-controls';
@@ -134,13 +133,13 @@ const ManualTrader = () => {
 
         const startStream = async () => {
             try {
-                const response: any = await doUntilDone(() => api.send({
+                const response: any = await api.send({
                     ticks_history: symbol,
                     end: 'latest',
                     count: TICK_WINDOW,
                     style: 'ticks',
                     subscribe: 1,
-                }), ['AlreadySubscribed'], api_base);
+                });
                 if (response?.error) throw new Error(response.error.message || 'Unable to subscribe to market ticks.');
                 if (!active) {
                     const id = response?.subscription?.id;
