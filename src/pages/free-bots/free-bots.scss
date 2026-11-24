@@ -1,0 +1,112 @@
+@use 'components/shared/styles/mixins' as *;
+
+.free-bots {
+    min-height: var(--tab-content-height);
+    padding: 3.2rem;
+    color: #f5f7ff;
+    background:
+        radial-gradient(circle at 12% 15%, rgb(37 131 255 / 16%), transparent 28rem),
+        radial-gradient(circle at 92% 85%, rgb(165 35 131 / 16%), transparent 26rem),
+        linear-gradient(180deg, #0b1329 0%, #080d20 100%);
+
+    &__heading {
+        margin-bottom: 2.8rem;
+
+        h1 {
+            margin: 0.5rem 0;
+            color: #f4d98a;
+            font-size: clamp(2.6rem, 6vw, 3.8rem);
+            font-weight: 800;
+        }
+
+        p {
+            margin: 0;
+            color: #aeb9d2;
+            font-size: 1.4rem;
+        }
+    }
+
+    &__eyebrow {
+        color: #35d8ee;
+        font-size: 1.1rem;
+        font-weight: 800;
+        letter-spacing: 0.28rem;
+    }
+
+    &__card {
+        width: min(100%, 42rem);
+        padding: 2.2rem;
+        border: 1px solid rgb(214 179 93 / 35%);
+        border-top: 0.4rem solid #d6b35d;
+        border-radius: 1.6rem;
+        background: linear-gradient(145deg, #172440 0%, #0e1830 100%);
+        box-shadow: 0 1.2rem 3rem rgb(0 0 0 / 28%);
+
+        h2 {
+            margin: 1.8rem 0 0.7rem;
+            color: #fff2c6;
+            font-size: 2.3rem;
+            font-weight: 800;
+        }
+    }
+
+    &__card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    &__icon {
+        display: grid;
+        width: 5.4rem;
+        height: 5.4rem;
+        place-items: center;
+        border: 1px solid rgb(244 217 138 / 35%);
+        border-radius: 1.3rem;
+        color: #f4d98a;
+        background: rgb(214 179 93 / 12%);
+        font-size: 3rem;
+    }
+
+    &__tag {
+        padding: 0.6rem 1rem;
+        border: 1px solid rgb(45 220 243 / 35%);
+        border-radius: 2rem;
+        color: #42dff1;
+        font-size: 1rem;
+        font-weight: 800;
+        letter-spacing: 0.12rem;
+    }
+
+    &__description {
+        margin: 0;
+        color: #b7c2dc;
+        font-size: 1.35rem;
+        line-height: 1.5;
+    }
+
+    &__open {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 2.2rem;
+        padding: 1.25rem 1.5rem;
+        border: 0;
+        border-radius: 0.9rem;
+        color: #11182b;
+        background: linear-gradient(100deg, #f4d98a, #d6b35d);
+        font-size: 1.45rem;
+        font-weight: 800;
+        cursor: pointer;
+
+        &:active {
+            transform: translateY(1px);
+        }
+    }
+
+    @include mobile-or-tablet-screen {
+        min-height: var(--tab-content-height-mobile);
+        padding: 2rem 1.2rem;
+    }
+}
