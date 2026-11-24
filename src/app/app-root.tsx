@@ -11,7 +11,7 @@ import './app-root.scss';
 const AppContent = lazy(() => import('./app-content'));
 
 const AppRootLoader = () => {
-    return <ChunkLoader message={localize('Loading...')} />;
+    return null;
 };
 
 const ErrorComponentWrapper = observer(() => {
@@ -33,7 +33,9 @@ const ErrorComponentWrapper = observer(() => {
     );
 });
 
-const AppRoot = () => {
+type AppRootProps = { onReady?: () => void };
+
+const AppRoot = ({ onReady }: AppRootProps) => {
     const store = useStore();
     const api_base_initialized = useRef(false);
     const [is_api_initialized, setIsApiInitialized] = useState(false);
@@ -66,10 +68,8 @@ const AppRoot = () => {
     }, []);
 
     useEffect(() => {
-        if (is_api_initialized) {
-            window.dispatchEvent(new Event('odt-app-root-ready'));
-        }
-    }, [is_api_initialized]);
+        if (is_api_initialized) onReady?.();
+    }, [is_api_initialized, onReady]);
 
     if (!store || !is_api_initialized) return <AppRootLoader />;
 
