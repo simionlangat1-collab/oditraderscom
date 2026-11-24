@@ -13,19 +13,20 @@ const FreeBots = ({ onOpenBotBuilder }: TFreeBotsProps) => (
             <p>Ready-to-open trading strategies.</p>
         </div>
 
-        <article className='free-bots__card'>
-            <div className='free-bots__card-top'>
+        <div className='free-bots__cards'>
+            <article className='free-bots__card'>
                 <div className='free-bots__icon' aria-hidden='true'>✦</div>
-                <span className='free-bots__tag'>FREE BOT</span>
-            </div>
-            <h2>Iconic Bot</h2>
-            <p className='free-bots__description'>
-                Open the Iconic Bot workspace in Bot Builder.
-            </p>
-            <button className='free-bots__open' type='button' onClick={onOpenBotBuilder}>
-                Open <span aria-hidden='true'>→</span>
-            </button>
-        </article>
+                <div className='free-bots__details'>
+                    <h2>Iconic Bot</h2>
+                    <p className='free-bots__description'>
+                        Open the Iconic Bot workspace in Bot Builder.
+                    </p>
+                </div>
+                <button className='free-bots__open' type='button' onClick={onOpenBotBuilder}>
+                    Open <span aria-hidden='true'>→</span>
+                </button>
+            </article>
+        </div>
     </section>
 );
 
