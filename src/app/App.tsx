@@ -1,6 +1,6 @@
 import { createContext, lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import React from 'react';
-import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, createRoutesFromElements, Outlet, Route, RouterProvider } from 'react-router-dom';
 import { cleanupUrl, handleOAuthCallback } from '@/external/deriv-core';
 import ChunkLoader from '@/components/loader/chunk-loader';
 import LocalStorageSyncWrapper from '@/components/localStorage-sync-wrapper';
@@ -42,6 +42,7 @@ const StartupGate = () => {
                                     <RoutePromptDialog />
                                     <CoreStoreProvider>
                                         <Layout />
+                        <Outlet />
                                     </CoreStoreProvider>
                                 </LocalStorageSyncWrapper>
                             </StoreProvider>
