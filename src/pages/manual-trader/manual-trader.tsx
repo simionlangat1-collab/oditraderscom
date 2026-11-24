@@ -47,6 +47,7 @@ const ManualTrader = () => {
     const completedContracts = useRef(new Set<number>());
     const recoveryStartedContracts = useRef(new Set<number>());
     const latestDigitTickRef = useRef<TDigitTick | null>(null);
+    const lastLiveTickAtRef = useRef(0);
     const buyLock = useRef(false);
     const accountKey = String((api_base.account_info as any)?.loginid || 'guest');
     const historyStorageKey = `gtraders_manual_trader_history_${accountKey}`;
@@ -129,9 +130,7 @@ const ManualTrader = () => {
         if (connection === CONNECTION_STATUS.OPENED && symbols.length === 0) {
             void loadSymbols();
         }
-    }, [connection, symbols.length, loadSymbols]);
-
-    useEffect(() => {
+    }, [con    useEffect(() => {
         const api = api_base.api as any;
         if (!socketReady || !api || api.connection?.readyState !== 1 || !symbol) {
             setTickConnection('disconnected');
@@ -142,42 +141,65 @@ const ManualTrader = () => {
         let active = true;
         let subscriptionId = '';
         latestDigitTickRef.current = null;
+        lastLiveTickAtRef.current = Date.now();
         setDigitTicks([]);
         setTickError('');
-
         setTickConnection('connecting');
 
         const precision = (api_base.pip_sizes as Record<string, number>)?.[symbol];
         const messageSubscription = api.onMessage().subscribe((message: any) => {
-            const data = message?.data ?? message;
-            if (!active || data?.msg_type !== 'tick' || data.tick?.symbol !== symbol) return;
+            if (!active) return;
+
+            const rawData = message?.data ?? message;
+            let data = rawData;
+            if (typeof rawData === 'string') {
+                try {
+                    data = JSON.parse(rawData);
+                } catch {
+                    return;
+                }
+            }
+
+            if (data?.msg_type !== 'tick' || data.tick?.symbol !== symbol) return;
             const quote = Number(data.tick.quote);
             const epoch = Number(data.tick.epoch);
             if (!Number.isFinite(quote) || !Number.isFinite(epoch)) return;
+
             const nextTick = { quote, epoch, digit: getLastDigit(data.tick.quote, precision) };
             latestDigitTickRef.current = nextTick;
+            lastLiveTickAtRef.current = Date.now();
             setTickConnection('connected');
             setDigitTicks(previous => [...previous, nextTick].slice(-TICK_WINDOW));
         });
 
         const startStream = async () => {
             try {
-                // Fetch the initial history separately from the live tick stream.
-                // Keeping these as two requests makes the stream resilient to
-                // subscription-response timing differences in the shared API client.
-                const historyResponse: any = await api.send({
+                // Deriv supports history and ongoing live updates in one subscription.
+                // This avoids a gap and simplifies subscription ownership/cleanup.
+                const response: any = await api.send({
                     ticks_history: symbol,
                     end: 'latest',
                     count: TICK_WINDOW,
                     style: 'ticks',
+                    subscribe: 1,
                 });
-                if (historyResponse?.error) {
-                    throw new Error(historyResponse.error.message || 'Unable to load market tick history.');
-                }
-                if (!active) return;
 
-                const historyData = historyResponse?.data ?? historyResponse;
-                const history = historyData?.history;
+                const responseData = response?.data ?? response;
+                if (responseData?.error || response?.error) {
+                    const apiError = responseData?.error || response.error;
+                    throw new Error(apiError.message || 'Unable to subscribe to market ticks.');
+                }
+
+                subscriptionId = responseData?.subscription?.id || response?.subscription?.id || '';
+                if (!active) {
+                    if (subscriptionId) void api.send({ forget: subscriptionId });
+                    return;
+                }
+                if (!subscriptionId) {
+                    throw new Error('Deriv did not create the live tick subscription.');
+                }
+
+                const history = responseData?.history;
                 const prices: (number | string)[] = history?.prices || [];
                 const times: number[] = history?.times || [];
                 const historicalTicks = prices.map((price, index) => ({
@@ -186,35 +208,18 @@ const ManualTrader = () => {
                     digit: getLastDigit(price, precision),
                 })).filter(tick => Number.isFinite(tick.quote) && Number.isFinite(tick.epoch));
 
-                const latestHistoricalTick = historicalTicks[historicalTicks.length - 1];
-                if (!latestDigitTickRef.current || (latestHistoricalTick && latestHistoricalTick.epoch >= latestDigitTickRef.current.epoch)) {
-                    latestDigitTickRef.current = latestHistoricalTick || null;
-                }
-                setDigitTicks(previous => [...historicalTicks, ...previous]
-                    .sort((a, b) => a.epoch - b.epoch)
-                    .slice(-TICK_WINDOW));
-
-                // Now create a dedicated live tick subscription.
-                const tickResponse: any = await api.send({
-                    ticks: symbol,
-                    subscribe: 1,
-                });
-                if (tickResponse?.error) {
-                    throw new Error(tickResponse.error.message || 'Unable to subscribe to live market ticks.');
-                }
-                if (!active) {
-                    const id = tickResponse?.subscription?.id;
-                    if (id) void api.send({ forget: id });
-                    return;
+                if (historicalTicks.length) {
+                    const latestHistoricalTick = historicalTicks[historicalTicks.length - 1];
+                    if (!latestDigitTickRef.current || latestHistoricalTick.epoch >= latestDigitTickRef.current.epoch) {
+                        latestDigitTickRef.current = latestHistoricalTick;
+                    }
+                    setDigitTicks(previous => [...historicalTicks, ...previous]
+                        .sort((a, b) => a.epoch - b.epoch)
+                        .slice(-TICK_WINDOW));
                 }
 
-                const tickResponseData = tickResponse?.data ?? tickResponse;
-                subscriptionId = tickResponseData?.subscription?.id || tickResponse?.subscription?.id || '';
-                if (!subscriptionId) {
-                    throw new Error('Live tick subscription was not created.');
-                }
-
-                setTickConnection('connected');
+                // Subscription acknowledgement alone is not proof of a live stream.
+                // The status changes to connected only when the first live tick arrives.
             } catch (requestError) {
                 if (!active) return;
                 setTickError(requestError instanceof Error ? requestError.message : 'Unable to stream market ticks.');
@@ -226,23 +231,27 @@ const ManualTrader = () => {
         return () => {
             active = false;
             messageSubscription?.unsubscribe?.();
-            if (subscriptionId) api.send({ forget: subscriptionId });
+            if (subscriptionId) void api.send({ forget: subscriptionId });
         };
     }, [symbol, socketReady, socketGeneration, tickStreamRestartKey]);
 
-    // Watchdog: if the WebSocket reports OPEN but no tick has arrived for a while,
-    // force this market subscription to be rebuilt instead of leaving the UI stuck.
+    // Restart only after a sustained absence of live ticks. Historical data does
+    // not reset this timer, and the timestamp is advanced before restarting so
+    // the watchdog cannot repeatedly rebuild the subscription every few seconds.
     useEffect(() => {
         const watchdog = window.setInterval(() => {
             const api = api_base.api as any;
             if (!socketReady || !symbol || !api || api.connection?.readyState !== 1) return;
-            const latestEpoch = latestDigitTickRef.current?.epoch || 0;
-            const nowEpoch = Math.floor(Date.now() / 1000);
-            if (!latestEpoch || nowEpoch - latestEpoch > 10) {
+
+            const lastLiveTickAt = lastLiveTickAtRef.current;
+            if (!lastLiveTickAt || Date.now() - lastLiveTickAt > 20000) {
+                lastLiveTickAtRef.current = Date.now();
                 setTickStreamRestartKey(previous => previous + 1);
             }
         }, 5000);
         return () => window.clearInterval(watchdog);
+    }, [socketReady, symbol]);
+atchdog);
     }, [socketReady, symbol]);
 
     useEffect(() => {
