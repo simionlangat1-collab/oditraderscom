@@ -25,6 +25,16 @@ const StartupReadySignal = ({ onReady }: { onReady: () => void }) => {
     return null;
 };
 
+const StartupAppRootReadySignal = ({ onReady }: { onReady: () => void }) => {
+    useEffect(() => {
+        const handleAppRootReady = () => onReady();
+        window.addEventListener('odt-app-root-ready', handleAppRootReady);
+        return () => window.removeEventListener('odt-app-root-ready', handleAppRootReady);
+    }, [onReady]);
+
+    return null;
+};
+
 /**
  * Keeps the premium startup animation visible for one complete orbital lap.
  * The dashboard is revealed only after both the app shell is ready and the
@@ -33,8 +43,10 @@ const StartupReadySignal = ({ onReady }: { onReady: () => void }) => {
 const StartupGate = () => {
     const [orbitComplete, setOrbitComplete] = useState(false);
     const [appReady, setAppReady] = useState(false);
+    const [appRootReady, setAppRootReady] = useState(false);
     const markAppReady = useCallback(() => setAppReady(true), []);
-    const startupComplete = orbitComplete && appReady;
+    const markAppRootReady = useCallback(() => setAppRootReady(true), []);
+    const startupComplete = orbitComplete && appReady && appRootReady;
 
     return (
         <>
@@ -48,6 +60,7 @@ const StartupGate = () => {
                                     <CoreStoreProvider>
                                         <Layout />
                                         <StartupReadySignal onReady={markAppReady} />
+                                        <StartupAppRootReadySignal onReady={markAppRootReady} />
                                     </CoreStoreProvider>
                                 </LocalStorageSyncWrapper>
                             </StoreProvider>
