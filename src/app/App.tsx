@@ -17,24 +17,6 @@ import './app-root.scss';
 const Layout = lazy(() => import('../components/layout'));
 const AppRoot = lazy(() => import('./app-root'));
 
-const StartupReadySignal = ({ onReady }: { onReady: () => void }) => {
-    useEffect(() => {
-        onReady();
-    }, [onReady]);
-
-    return null;
-};
-
-const StartupAppRootReadySignal = ({ onReady }: { onReady: () => void }) => {
-    useEffect(() => {
-        const handleAppRootReady = () => onReady();
-        window.addEventListener('odt-app-root-ready', handleAppRootReady);
-        return () => window.removeEventListener('odt-app-root-ready', handleAppRootReady);
-    }, [onReady]);
-
-    return null;
-};
-
 /**
  * Keeps the premium startup animation visible for one complete orbital lap.
  * The dashboard is revealed only after both the app shell is ready and the
@@ -43,10 +25,8 @@ const StartupAppRootReadySignal = ({ onReady }: { onReady: () => void }) => {
 const StartupGate = () => {
     const [orbitComplete, setOrbitComplete] = useState(false);
     const [appReady, setAppReady] = useState(false);
-    const [appRootReady, setAppRootReady] = useState(false);
     const markAppReady = useCallback(() => setAppReady(true), []);
-    const markAppRootReady = useCallback(() => setAppRootReady(true), []);
-    const startupComplete = orbitComplete && appReady && appRootReady;
+    const startupComplete = orbitComplete && appReady;
 
     return (
         <>
@@ -59,8 +39,6 @@ const StartupGate = () => {
                                     <RoutePromptDialog />
                                     <CoreStoreProvider>
                                         <Layout />
-                                        <StartupReadySignal onReady={markAppReady} />
-                                        <StartupAppRootReadySignal onReady={markAppRootReady} />
                                     </CoreStoreProvider>
                                 </LocalStorageSyncWrapper>
                             </StoreProvider>
@@ -96,9 +74,9 @@ const router = createBrowserRouter(
     createRoutesFromElements(
         <Route path='/' element={<StartupGate />}>
             {/* All child routes will be passed as children to Layout */}
-            <Route index element={<AppRoot />} />
+            <Route index element={<AppRoot onReady={markAppReady} />} />
             {/* App Builder embeds the template at /preview — render the same app shell */}
-            <Route path='preview' element={<AppRoot />} />
+            <Route path='preview' element={<AppRoot onReady={markAppReady} />} />
         </Route>
     ),
     { basename: routerBasename }
