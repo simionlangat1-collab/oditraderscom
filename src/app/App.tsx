@@ -19,8 +19,6 @@ const AppRoot = lazy(() => import('./app-root'));
 
 export const StartupReadyContext = createContext<(() => void) | null>(null);
 
-export const StartupReadyContext = createContext<(() => void) | null>(null);
-
 /**
  * Keeps the premium startup animation visible for one complete orbital lap.
  * The dashboard is revealed only after both the app shell is ready and the
