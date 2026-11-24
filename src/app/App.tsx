@@ -1,4 +1,4 @@
-import { createContext, lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import React from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
 import { cleanupUrl, handleOAuthCallback } from '@/external/deriv-core';
@@ -17,8 +17,6 @@ import './app-root.scss';
 const Layout = lazy(() => import('../components/layout'));
 const AppRoot = lazy(() => import('./app-root'));
 
-export const StartupReadyContext = createContext<(() => void) | null>(null);
-
 /**
  * Keeps the premium startup animation visible for one complete orbital lap.
  * The dashboard is revealed only after both the app shell is ready and the
@@ -26,13 +24,10 @@ export const StartupReadyContext = createContext<(() => void) | null>(null);
  */
 const StartupGate = () => {
     const [orbitComplete, setOrbitComplete] = useState(false);
-    const [appReady, setAppReady] = useState(false);
-    const markAppReady = useCallback(() => setAppReady(true), []);
-    const startupComplete = orbitComplete && appReady;
+    const startupComplete = orbitComplete;
 
     return (
-        <StartupReadyContext.Provider value={markAppReady}>
-            <>
+        <>
             <div className={startupComplete ? undefined : 'odt-startup__app-hidden'}>
                 <Suspense fallback={null}>
                     <TranslationProvider defaultLang='EN' i18nInstance={i18nInstance}>
@@ -55,8 +50,7 @@ const StartupGate = () => {
                     onAnimationComplete={() => setOrbitComplete(true)}
                 />
             )}
-            </>
-        </StartupReadyContext.Provider>
+        </>
     );
 };
 
