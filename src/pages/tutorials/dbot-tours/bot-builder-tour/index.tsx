@@ -1,14 +1,9 @@
-import React from 'react';
-import { observer } from 'mobx-react-lite';
-import BotBuilderTourDesktop from './bot-builder-tour-desktop';
-import BotBuilderTourMobile from './bot-builder-tour-mobile';
-
 type TBotBuilderTourHandler = {
     is_mobile: boolean;
 };
 
-const BotBuilderTourHandler: React.FC<TBotBuilderTourHandler> = observer(({ is_mobile }) => {
-    return <>{is_mobile ? <BotBuilderTourMobile /> : <BotBuilderTourDesktop />}</>;
-});
+// ODI TRADERS: permanently disable the automatic Bot Builder welcome tour.
+// Users can still access learning material from the Tutorials tab.
+const BotBuilderTourHandler = (_props: TBotBuilderTourHandler) => null;
 
 export default BotBuilderTourHandler;
