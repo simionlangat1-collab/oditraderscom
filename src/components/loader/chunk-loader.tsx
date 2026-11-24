@@ -1,10 +1,20 @@
+import { useRef } from 'react';
 import './chunk-loader.scss';
 
 type ChunkLoaderProps = {
     message: string;
+    onAnimationComplete?: () => void;
 };
 
-export default function ChunkLoader({ message }: ChunkLoaderProps) {
+export default function ChunkLoader({ message, onAnimationComplete }: ChunkLoaderProps) {
+    const completed = useRef(false);
+
+    const handleOrbitComplete = () => {
+        if (completed.current) return;
+        completed.current = true;
+        onAnimationComplete?.();
+    };
+
     return (
         <main className='odt-startup' role='status' aria-live='polite' aria-label='ODI TRADERS is starting'>
             <div className='odt-startup__ambient odt-startup__ambient--left' />
@@ -33,7 +43,7 @@ export default function ChunkLoader({ message }: ChunkLoaderProps) {
             <section className='odt-startup__content'>
                 <div className='odt-startup__symbol'>
                     <div className='odt-startup__inner-ring' />
-                    <div className='odt-startup__orbit'>
+                    <div className='odt-startup__orbit' onAnimationEnd={handleOrbitComplete}>
                         <span className='odt-startup__orb' />
                     </div>
                     <div className='odt-startup__center-glow' />
