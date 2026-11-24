@@ -800,28 +800,50 @@
  */
 @include mobile-or-tablet-screen {
     .main__container {
+        .dc-themed-scrollbars-wrapper {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x;
+            scrollbar-width: none;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
+        }
+
         .dc-tabs__list {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: stretch;
-            gap: 0;
-            overflow: hidden;
-            padding: 0.55rem 0.35rem 0.65rem;
+            flex-wrap: nowrap;
+            gap: 0.45rem;
+            overflow: visible;
+            width: max-content;
+            min-width: 100%;
+            padding: 0.55rem 0.55rem 0.65rem;
+            touch-action: pan-x;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
             background: linear-gradient(180deg, #101a32 0%, #0a1227 100%);
             border-bottom: 1px solid rgb(214 179 93 / 24%);
             box-shadow: 0 0.6rem 1.8rem rgb(0 0 0 / 22%);
 
             .dc-tabs__item {
                 display: flex;
-                flex: 1 1 20%;
+                flex: 0 0 auto;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 gap: 0.2rem;
-                width: 20%;
-                min-width: 0;
+                width: auto;
+                min-width: max-content;
                 height: 5.6rem;
-                padding: 0.35rem 0.1rem;
+                padding: 0.35rem 1rem;
                 border-radius: 0.9rem;
                 color: #c3c9d8;
                 font-size: 1rem;
