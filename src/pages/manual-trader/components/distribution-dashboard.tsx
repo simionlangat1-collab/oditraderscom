@@ -3,8 +3,6 @@ import React, { useMemo, useState } from 'react';
 type TTick = { quote: number; epoch: number; digit: number };
 type Props = { ticks: TTick[] };
 
-const TICK_WINDOW = 1000;
-
 export const ManualTraderDistributionPanels = ({ ticks }: Props) => {
     const [overUnderDigit, setOverUnderDigit] = useState(5);
 
