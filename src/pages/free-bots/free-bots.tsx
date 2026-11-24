@@ -10,20 +10,29 @@ const FreeBots = ({ onOpenBotBuilder }: TFreeBotsProps) => (
         <div className='free-bots__heading'>
             <span className='free-bots__eyebrow'>ODI TRADERS</span>
             <h1>Free Bots</h1>
-            <p>Ready-to-open trading strategies.</p>
+            <p>Explore ready-made trading strategies.</p>
         </div>
 
         <div className='free-bots__cards'>
             <article className='free-bots__card'>
-                <div className='free-bots__icon' aria-hidden='true'>✦</div>
-                <div className='free-bots__details'>
+                <span className='free-bots__badge'>PREMIUM</span>
+
+                <div className='free-bots__title-row'>
+                    <span className='free-bots__accent' aria-hidden='true' />
+                    <span className='free-bots__icon' aria-hidden='true'>🤖</span>
                     <h2>Iconic Bot</h2>
-                    <p className='free-bots__description'>
-                        Open the Iconic Bot workspace in Bot Builder.
-                    </p>
                 </div>
+
+                <p className='free-bots__description'>
+                    Bot Builder engine · Ready-to-use trading strategy
+                </p>
+
+                <div className='free-bots__rating' aria-label='5 out of 5 stars'>
+                    <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+                </div>
+
                 <button className='free-bots__open' type='button' onClick={onOpenBotBuilder}>
-                    Open <span aria-hidden='true'>→</span>
+                    OPEN ICONIC BOT
                 </button>
             </article>
         </div>
