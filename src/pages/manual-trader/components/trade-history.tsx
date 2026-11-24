@@ -14,7 +14,7 @@ export const TradeHistory = ({ trades, currency }: Props) => (
                     <div className='manual-trader__history-row' key={trade.contract_id}>
                         <div>
                             <strong>{trade.symbol_name}</strong>
-                            <span>{trade.contract_type.replace('DIGIT', '')} · {trade.contract_id}</span>
+                            <span>{trade.contract_type.replace('DIGIT', '')} · {trade.contract_id} · Stake {Number(trade.stake_amount ?? trade.buy_price).toFixed(2)} {trade.currency || currency}{trade.is_recovery ? ' · AUTO RECOVERY' : ''}</span>
                         </div>
                         <div className='manual-trader__history-result'>
                             <strong>{trade.profit === undefined ? trade.status : `${trade.profit >= 0 ? '+' : ''}${trade.profit.toFixed(2)} ${currency}`}</strong>
