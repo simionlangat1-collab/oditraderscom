@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
+import { doUntilDone } from '@/external/bot-skeleton/services/tradeEngine/utils/helpers';
 import { CONNECTION_STATUS, connectionStatus$ } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { manualTradeService } from './services/manual-trade-service';
 import { TradeControls } from './components/trade-controls';
@@ -125,18 +126,20 @@ const ManualTrader = () => {
             if (!Number.isFinite(quote) || !Number.isFinite(epoch)) return;
             const nextTick = { quote, epoch, digit: getLastDigit(data.tick.quote, precision) };
             latestDigitTickRef.current = nextTick;
+            setTickConnection('connected');
             setDigitTicks(previous => [...previous, nextTick].slice(-TICK_WINDOW));
         });
 
         const startStream = async () => {
             try {
-                const response = await api.send({
+                const response: any = await doUntilDone(() => api.send({
                     ticks_history: symbol,
                     end: 'latest',
                     count: TICK_WINDOW,
                     style: 'ticks',
                     subscribe: 1,
-                });
+                }), ['AlreadySubscribed'], api_base);
+                if (response?.error) throw new Error(response.error.message || 'Unable to subscribe to market ticks.');
                 if (!active) {
                     const id = response?.subscription?.id;
                     if (id) api.send({ forget: id });
@@ -365,6 +368,15 @@ const ManualTrader = () => {
 
             <div className='manual-trader__layout'>
                 <div className='manual-trader__column'>
+                    <ManualTraderAnalysisDashboard
+                        ticks={digitTicks}
+                        marketName={selectedSymbol?.display_name || symbol}
+                        tickConnection={tickConnection}
+                        tickError={tickError}
+                        tradeResultHighlight={tradeResultHighlight}
+                        onTradeResultAnimationEnd={clearTradeResultHighlight}
+                        barrierDigit={prediction}
+                    />
                     <TradeControls
                         symbols={symbols}
                         symbol={symbol}
@@ -385,19 +397,8 @@ const ManualTrader = () => {
                         onStakeChange={setStake}
                         onPredictionChange={setPrediction}
                     />
-                    <TradeHistory trades={trades} currency={currency} />
-                </div>
-                <div className='manual-trader__column'>
-                    <ManualTraderAnalysisDashboard
-                        ticks={digitTicks}
-                        marketName={selectedSymbol?.display_name || symbol}
-                        tickConnection={tickConnection}
-                        tickError={tickError}
-                        tradeResultHighlight={tradeResultHighlight}
-                        onTradeResultAnimationEnd={clearTradeResultHighlight}
-                        barrierDigit={prediction}
-                    />
                     <ManualTraderDistributionPanels ticks={digitTicks} />
+                    <TradeHistory trades={trades} currency={currency} />
                 </div>
             </div>
         </main>
