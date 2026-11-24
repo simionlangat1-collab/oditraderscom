@@ -22,6 +22,7 @@ export type ManualTradeRecord = {
     symbol: string;
     symbol_name: string;
     buy_price: number;
+    stake_amount?: number;
     payout: number;
     currency: string;
     status: 'open' | 'won' | 'lost' | 'sold';
