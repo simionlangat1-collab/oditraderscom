@@ -153,34 +153,58 @@ const ManualTrader = () => {
 
         const startStream = async () => {
             try {
-                const response: any = await api.send({
+                // Fetch the initial history separately from the live tick stream.
+                // Keeping these as two requests makes the stream resilient to
+                // subscription-response timing differences in the shared API client.
+                const historyResponse: any = await api.send({
                     ticks_history: symbol,
                     end: 'latest',
                     count: TICK_WINDOW,
                     style: 'ticks',
-                    subscribe: 1,
                 });
-                if (response?.error) throw new Error(response.error.message || 'Unable to subscribe to market ticks.');
-                if (!active) {
-                    const id = response?.subscription?.id;
-                    if (id) api.send({ forget: id });
-                    return;
+                if (historyResponse?.error) {
+                    throw new Error(historyResponse.error.message || 'Unable to load market tick history.');
                 }
-                const responseData = response?.data ?? response;
-                const history = responseData?.history;
+                if (!active) return;
+
+                const historyData = historyResponse?.data ?? historyResponse;
+                const history = historyData?.history;
                 const prices: (number | string)[] = history?.prices || [];
                 const times: number[] = history?.times || [];
                 const historicalTicks = prices.map((price, index) => ({
                     quote: Number(price),
                     epoch: Number(times[index] || 0),
                     digit: getLastDigit(price, precision),
-                }));
+                })).filter(tick => Number.isFinite(tick.quote) && Number.isFinite(tick.epoch));
+
                 const latestHistoricalTick = historicalTicks[historicalTicks.length - 1];
                 if (!latestDigitTickRef.current || (latestHistoricalTick && latestHistoricalTick.epoch >= latestDigitTickRef.current.epoch)) {
                     latestDigitTickRef.current = latestHistoricalTick || null;
                 }
-                setDigitTicks(previous => [...historicalTicks, ...previous].sort((a, b) => a.epoch - b.epoch).slice(-TICK_WINDOW));
-                subscriptionId = responseData?.subscription?.id || response?.subscription?.id || '';
+                setDigitTicks(previous => [...historicalTicks, ...previous]
+                    .sort((a, b) => a.epoch - b.epoch)
+                    .slice(-TICK_WINDOW));
+
+                // Now create a dedicated live tick subscription.
+                const tickResponse: any = await api.send({
+                    ticks: symbol,
+                    subscribe: 1,
+                });
+                if (tickResponse?.error) {
+                    throw new Error(tickResponse.error.message || 'Unable to subscribe to live market ticks.');
+                }
+                if (!active) {
+                    const id = tickResponse?.subscription?.id;
+                    if (id) void api.send({ forget: id });
+                    return;
+                }
+
+                const tickResponseData = tickResponse?.data ?? tickResponse;
+                subscriptionId = tickResponseData?.subscription?.id || tickResponse?.subscription?.id || '';
+                if (!subscriptionId) {
+                    throw new Error('Live tick subscription was not created.');
+                }
+
                 setTickConnection('connected');
             } catch (requestError) {
                 if (!active) return;
