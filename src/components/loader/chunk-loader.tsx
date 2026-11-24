@@ -1,9 +1,7 @@
-import React from 'react';
 import './chunk-loader.scss';
 
 type ChunkLoaderProps = {
     message: string;
-    onAnimationComplete?: () => void;
 };
 
 export default function ChunkLoader({ message, onAnimationComplete }: ChunkLoaderProps) {
