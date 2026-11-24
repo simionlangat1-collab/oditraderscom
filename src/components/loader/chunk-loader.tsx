@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import './chunk-loader.scss';
 
 type ChunkLoaderProps = {
@@ -14,6 +14,15 @@ export default function ChunkLoader({ message, onAnimationComplete }: ChunkLoade
         completed.current = true;
         onAnimationComplete?.();
     };
+
+    // CSS animation events can be missed when a mobile browser backgrounds,
+    // throttles, or restores the page during startup. Keep the full 6-second
+    // orbit, then fail safe shortly afterward so the dashboard cannot remain
+    // trapped behind the splash screen forever.
+    useEffect(() => {
+        const fallbackTimer = window.setTimeout(handleOrbitComplete, 6500);
+        return () => window.clearTimeout(fallbackTimer);
+    }, []);
 
     return (
         <main className='odt-startup' role='status' aria-live='polite' aria-label='ODI TRADERS is starting'>
