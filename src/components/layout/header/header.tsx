@@ -134,14 +134,14 @@ const AppHeader = observer(() => {
                         </div>
                     );
                 } else if (position === 'right') {
-                    // Keep the account switcher on desktop; no transfer action in the header.
-                    return isDesktop ? (
+                    // Keep the account balance and switcher in the far-right header corner on all screen sizes.
+                    return (
                         <div className='auth-actions'>
                             <div className='account-info'>
                                 <AccountSwitcher activeAccount={activeAccount} />
                             </div>
                         </div>
-                    ) : null;
+                    );
                 }
             }
             // Show login button only when fully settled (not during OAuth flow)
@@ -219,7 +219,7 @@ const AppHeader = observer(() => {
                 <Wrapper variant='left'>
                     <MobileMenu onLogout={handleLogout} />
                     <AppLogo />
-                    {isDesktop ? <MenuItems /> : renderAccountSection('left')}
+                    {isDesktop ? <MenuItems /> : null}
                 </Wrapper>
                 <Wrapper variant='right'>
                     {renderAccountSection('right')}
