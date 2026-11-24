@@ -4,7 +4,7 @@ type ChunkLoaderProps = {
     message: string;
 };
 
-export default function ChunkLoader({ message, onAnimationComplete }: ChunkLoaderProps) {
+export default function ChunkLoader({ message }: ChunkLoaderProps) {
     return (
         <main className='odt-startup' role='status' aria-live='polite' aria-label='ODI TRADERS is starting'>
             <div className='odt-startup__ambient odt-startup__ambient--left' />
