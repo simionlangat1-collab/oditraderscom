@@ -29,4 +29,6 @@ export type ManualTradeRecord = {
     entry_tick?: string | number;
     exit_tick?: string | number;
     purchase_time: number;
+    is_recovery?: boolean;
+    recovery_for?: number;
 };
