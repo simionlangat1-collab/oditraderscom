@@ -32,6 +32,8 @@ const ManualTrader = () => {
     const [stake, setStake] = useState('0.00');
     const [prediction, setPrediction] = useState(5);
     const [digitTicks, setDigitTicks] = useState<TDigitTick[]>([]);
+    const [selectedAnalysisWindow, setSelectedAnalysisWindow] = useState(1000);
+    const analysisTicks = useMemo(() => digitTicks.slice(-selectedAnalysisWindow), [digitTicks, selectedAnalysisWindow]);
     const [tickConnection, setTickConnection] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
     const [socketReady, setSocketReady] = useState(false);
     const [tickError, setTickError] = useState('');
@@ -369,7 +371,9 @@ const ManualTrader = () => {
             <div className='manual-trader__layout'>
                 <div className='manual-trader__column'>
                     <ManualTraderAnalysisDashboard
-                        ticks={digitTicks}
+                        ticks={analysisTicks}
+                        selectedWindow={selectedAnalysisWindow}
+                        onWindowChange={setSelectedAnalysisWindow}
                         marketName={selectedSymbol?.display_name || symbol}
                         tickConnection={tickConnection}
                         tickError={tickError}
@@ -397,7 +401,7 @@ const ManualTrader = () => {
                         onStakeChange={setStake}
                         onPredictionChange={setPrediction}
                     />
-                    <ManualTraderDistributionPanels ticks={digitTicks} />
+                    <ManualTraderDistributionPanels ticks={analysisTicks} />
                     <TradeHistory trades={trades} currency={currency} />
                 </div>
             </div>
