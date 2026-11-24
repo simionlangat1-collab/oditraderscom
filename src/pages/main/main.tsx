@@ -42,6 +42,7 @@ import RunPanel from '../../components/run-panel';
 import ChartModal from '../chart/chart-modal';
 import Dashboard from '../dashboard';
 import TradingCenter from '../trading-center/trading-center';
+import FreeBots from '../free-bots/free-bots';
 import ManualTrader from '../manual-trader/manual-trader';
 import RunStrategy from '../dashboard/run-strategy';
 import './main.scss';
@@ -80,7 +81,7 @@ const AppWrapper = observer(() => {
     const { clear } = summary_card;
     const { DASHBOARD, BOT_BUILDER } = DBOT_TABS;
     const init_render = React.useRef(true);
-    const hash = ['dashboard', 'bot_builder', 'trading_center', 'chart', 'tutorial', 'manual_trader'];
+    const hash = ['dashboard', 'bot_builder', 'free_bots', 'trading_center', 'manual_trader', 'chart', 'tutorial'];
     const { isDesktop } = useDevice();
     const location = useLocation();
     const navigate = useNavigate();
@@ -413,6 +414,21 @@ const AppWrapper = observer(() => {
                                 }
                                 id='id-bot-builder'
                             />
+                            <div
+                                label={
+                                    <>
+                                        <LabelPairedPuzzlePieceTwoCaptionBoldIcon
+                                            height='24px'
+                                            width='24px'
+                                            fill='var(--text-general)'
+                                        />
+                                        <Localize i18n_default_text='Free Bots' />
+                                    </>
+                                }
+                                id='id-free-bots'
+                            >
+                                <FreeBots onOpenBotBuilder={() => handleTabChange(BOT_BUILDER)} />
+                            </div>
                             <div
                                 label={
                                     <>
