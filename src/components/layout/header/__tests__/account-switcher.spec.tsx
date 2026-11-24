@@ -118,6 +118,12 @@ describe('AccountSwitcher', () => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
+    it('shows the Reset Demo Balance action inside the centered account modal', () => {
+        render(<AccountSwitcher activeAccount={mockActiveAccount} />);
+        fireEvent.click(screen.getByTestId('dt_acc_info'));
+        expect(screen.getByRole('button', { name: 'Reset Demo Balance' })).toBeInTheDocument();
+    });
+
     it('does not open the account modal when bot is running via run_panel', () => {
         const { useStore } = require('@/hooks/useStore');
         useStore.mockReturnValue({
