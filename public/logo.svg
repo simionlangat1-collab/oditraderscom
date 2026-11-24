@@ -1,22 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
-  <title id="title">ODI Traders gold mark</title>
-  <desc id="desc">Premium geometric gold abstract symbol for ODI Traders</desc>
+  <title id="title">ODI Traders circular gold emblem</title>
+  <desc id="desc">A refined circular gold medallion with an elegant ODI-inspired monogram.</desc>
   <defs>
-    <linearGradient id="gold" x1="18" y1="16" x2="110" y2="112" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFF3B0"/>
-      <stop offset="0.28" stop-color="#F6D365"/>
-      <stop offset="0.62" stop-color="#D4A017"/>
-      <stop offset="1" stop-color="#8F6500"/>
+    <linearGradient id="gold" x1="18" y1="12" x2="108" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF4C2"/>
+      <stop offset=".24" stop-color="#F7D978"/>
+      <stop offset=".52" stop-color="#D6A52B"/>
+      <stop offset=".78" stop-color="#A87512"/>
+      <stop offset="1" stop-color="#F3D477"/>
     </linearGradient>
-    <linearGradient id="gold2" x1="30" y1="30" x2="100" y2="98" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFE99A"/>
-      <stop offset="0.5" stop-color="#C99719"/>
-      <stop offset="1" stop-color="#F4D35E"/>
+    <linearGradient id="inner" x1="36" y1="30" x2="92" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF1B1"/>
+      <stop offset=".48" stop-color="#D9A832"/>
+      <stop offset="1" stop-color="#F9DF8A"/>
     </linearGradient>
+    <radialGradient id="sheen" cx="34%" cy="22%" r="78%">
+      <stop offset="0" stop-color="#F8D978" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#D6A52B" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <path d="M64 8 112 36v56l-48 28L16 92V36L64 8Z" fill="none" stroke="url(#gold)" stroke-width="7" stroke-linejoin="round"/>
-  <path d="M40 78V50l24-14 24 14v28L64 92 40 78Z" fill="none" stroke="url(#gold2)" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M48 73V55l16-9 16 9v18l-16 9-16-9Z" fill="url(#gold)" opacity=".16"/>
-  <path d="m48 73 16-9 16 9" fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="m64 64 16-9" fill="none" stroke="url(#gold2)" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="64" cy="64" r="56" fill="none" stroke="url(#gold)" stroke-width="5"/>
+  <circle cx="64" cy="64" r="48" fill="url(#sheen)" stroke="url(#gold)" stroke-width="1.6" opacity=".96"/>
+  <circle cx="64" cy="64" r="40" fill="none" stroke="url(#gold)" stroke-width="1.2" opacity=".55"/>
+  <path d="M64 35c-16 0-28 12.8-28 29s12 29 28 29 28-12.8 28-29S80 35 64 35Zm0 9c11 0 19 8.7 19 20s-8 20-19 20-19-8.7-19-20 8-20 19-20Z" fill="url(#inner)" fill-rule="evenodd"/>
+  <path d="M57 50h10.5c9.2 0 15.5 5.5 15.5 14s-6.3 14-15.5 14H57V50Zm9 7v14h1.5c4.3 0 6.5-2.5 6.5-7s-2.2-7-6.5-7H66Z" fill="url(#gold)" opacity=".98"/>
+  <path d="M30 64h7M91 64h7" stroke="url(#gold)" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+  <circle cx="64" cy="16.5" r="2" fill="#FFF0B0"/>
+  <circle cx="64" cy="111.5" r="2" fill="#C99722"/>
 </svg>
