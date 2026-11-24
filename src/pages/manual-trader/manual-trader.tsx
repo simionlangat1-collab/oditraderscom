@@ -130,7 +130,9 @@ const ManualTrader = () => {
         if (connection === CONNECTION_STATUS.OPENED && symbols.length === 0) {
             void loadSymbols();
         }
-    }, [con    useEffect(() => {
+    }, [connection, symbols.length, loadSymbols]);
+
+    useEffect(() => {
         const api = api_base.api as any;
         if (!socketReady || !api || api.connection?.readyState !== 1 || !symbol) {
             setTickConnection('disconnected');
@@ -174,8 +176,7 @@ const ManualTrader = () => {
 
         const startStream = async () => {
             try {
-                // Deriv supports history and ongoing live updates in one subscription.
-                // This avoids a gap and simplifies subscription ownership/cleanup.
+                // One Deriv subscription supplies both initial history and live ticks.
                 const response: any = await api.send({
                     ticks_history: symbol,
                     end: 'latest',
@@ -218,8 +219,7 @@ const ManualTrader = () => {
                         .slice(-TICK_WINDOW));
                 }
 
-                // Subscription acknowledgement alone is not proof of a live stream.
-                // The status changes to connected only when the first live tick arrives.
+                // Wait for an actual tick message before showing Connected.
             } catch (requestError) {
                 if (!active) return;
                 setTickError(requestError instanceof Error ? requestError.message : 'Unable to stream market ticks.');
@@ -235,23 +235,18 @@ const ManualTrader = () => {
         };
     }, [symbol, socketReady, socketGeneration, tickStreamRestartKey]);
 
-    // Restart only after a sustained absence of live ticks. Historical data does
-    // not reset this timer, and the timestamp is advanced before restarting so
-    // the watchdog cannot repeatedly rebuild the subscription every few seconds.
+    // Only live tick arrivals reset this watchdog; history cannot mask a stalled stream.
     useEffect(() => {
         const watchdog = window.setInterval(() => {
             const api = api_base.api as any;
             if (!socketReady || !symbol || !api || api.connection?.readyState !== 1) return;
 
-            const lastLiveTickAt = lastLiveTickAtRef.current;
-            if (!lastLiveTickAt || Date.now() - lastLiveTickAt > 20000) {
+            if (!lastLiveTickAtRef.current || Date.now() - lastLiveTickAtRef.current > 20000) {
                 lastLiveTickAtRef.current = Date.now();
                 setTickStreamRestartKey(previous => previous + 1);
             }
         }, 5000);
         return () => window.clearInterval(watchdog);
-    }, [socketReady, symbol]);
-atchdog);
     }, [socketReady, symbol]);
 
     useEffect(() => {
