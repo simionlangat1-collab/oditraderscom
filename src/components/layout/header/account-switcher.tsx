@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 import { addComma, getCurrencyDisplayCode, getDecimalPlaces, isProduction } from '@/components/shared';
@@ -6,6 +6,7 @@ import { CurrencyIcon } from '@/components/currency/currency-icon';
 import { getAuthInfo } from '@/external/deriv-core/auth/storage';
 import { setAccountList } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { DerivWSAccountsService } from '@/services/derivws-accounts.service';
+import brandConfig from '../../../../brand.config.json';
 import Text from '@/components/shared_ui/text';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 import { useApiBase } from '@/hooks/useApiBase';
@@ -19,7 +20,6 @@ import './account-switcher.scss';
 const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
     const [isOpen, setIsOpen] = useState(false);
     const [resettingAccount, setResettingAccount] = useState<string | null>(null);
-    const wrapperRef = useRef<HTMLDivElement>(null);
     const { accountList, activeLoginid } = useApiBase();
     const { client, run_panel } = useStore() ?? {};
 
@@ -133,7 +133,7 @@ const AccountSwitcher = observer(({ activeAccount }: TAccountSwitcher) => {
     const showChevron = !isSingleAccount && !is_bot_running;
 
     return (
-        <div className='acc-info__wrapper' ref={wrapperRef}>
+        <div className='acc-info__wrapper'>
             <AccountInfoWrapper>
                 <div
                     data-testid='dt_acc_info'
