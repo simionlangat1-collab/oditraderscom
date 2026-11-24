@@ -47,7 +47,6 @@ const StartupGate = () => {
             {!startupComplete && (
                 <ChunkLoader
                     message={localize('Preparing your trading experience...')}
-                    onAnimationComplete={() => setOrbitComplete(true)}
                 />
             )}
         </>
