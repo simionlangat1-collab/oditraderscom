@@ -69,6 +69,7 @@ const ManualTrader = () => {
                 .filter(
                     (item: any) =>
                         item.market === 'synthetic_index' &&
+                        /^Volatility\b/i.test(String(item.display_name || '')) &&
                         item.exchange_is_open &&
                         !item.is_trading_suspended
                 )
