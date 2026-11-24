@@ -737,57 +737,6 @@
     }
 }
 
-/** @define acc-dropdown */
-.acc-dropdown {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    z-index: 3;
-    min-width: 16rem;
-    background-color: var(--general-main-2);
-    border-radius: $BORDER_RADIUS;
-    box-shadow: 0 8px 16px 0 var(--shadow-menu);
-    overflow: hidden;
-
-    &__account {
-        display: flex;
-        flex-direction: column;
-        padding: .8rem 1.6rem;
-        cursor: pointer;
-        background: var(--general-main-2);
-
-        &:not(:last-child) {
-            border-bottom: 1px solid var(--general-section-1);
-        }
-
-        &:hover:not(.acc-dropdown__account--selected) {
-            background: var(--state-hover);
-        }
-
-        &--selected {
-            background: var(--state-active);
-            cursor: default;
-        }
-    }
-
-    &__account-type {
-        color: var(--status-success);
-        margin-bottom: 0.1rem;
-        line-height: 1.2;
-        font-size: 1.4rem;
-
-        &--virtual {
-            color: $color-yellow;
-        }
-    }
-
-    &__balance {
-        color: var(--text-prominent);
-        line-height: 1.4;
-        font-size: 1.2rem;
-    }
-}
-
 .header {
     &__logout-button {
         margin-right: 0.8rem;
@@ -809,10 +758,9 @@
     inset: 0;
     z-index: 99999;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
     padding: 2rem;
-    padding-top: 10vh;
     background: rgba(8, 13, 25, 0.58);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
