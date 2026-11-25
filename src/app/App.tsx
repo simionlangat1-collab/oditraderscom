@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import React from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom';
 import { cleanupUrl, handleOAuthCallback } from '@/external/deriv-core';
@@ -24,24 +24,10 @@ const AppRoot = lazy(() => import('./app-root'));
  */
 const StartupGate = () => {
     const [orbitComplete, setOrbitComplete] = useState(false);
-    const [appReady, setAppReady] = useState(false);
-    const markAppReady = useCallback(() => setAppReady(true), []);
-
-    useEffect(() => {
-        const handleAppReady = () => markAppReady();
-
-        // AppContent may finish initialization before this effect runs.
-        // Keep the readiness flag on the document so the signal cannot be missed.
-        if (document.documentElement.dataset.odtStartupReady === 'true') {
-            markAppReady();
-            return;
-        }
-
-        window.addEventListener('odt-startup-ready', handleAppReady);
-        return () => window.removeEventListener('odt-startup-ready', handleAppReady);
-    }, [markAppReady]);
-
-    const startupComplete = orbitComplete && appReady;
+    // The golden orb is the startup clock. The dashboard must be released
+    // exactly when its single six-second lap finishes; initialization continues
+    // underneath the already-mounted dashboard.
+    const startupComplete = orbitComplete;
 
     return (
         <>
