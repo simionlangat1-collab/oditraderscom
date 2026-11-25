@@ -1,0 +1,135 @@
+<xml xmlns="http://www.w3.org/1999/xhtml" collection="false" is_dbot="true">
+  <variables>
+    <variable id="iconic_contract_type">Contract Type</variable>
+  </variables>
+  <block type="trade_definition" id="iconic_trade_definition" x="0" y="0">
+    <statement name="TRADE_OPTIONS">
+      <block type="trade_definition_market" id="iconic_market" deletable="false" movable="false">
+        <field name="MARKET_LIST">volidx</field>
+        <field name="SUBMARKET_LIST">random_index</field>
+        <field name="SYMBOL_LIST">R_100</field>
+        <next>
+          <block type="trade_definition_tradetype" id="iconic_tradetype" deletable="false" movable="false">
+            <field name="TRADETYPECAT_LIST">digits</field>
+            <field name="TRADETYPE_LIST">evenodd</field>
+            <next>
+              <block type="trade_definition_contracttype" id="iconic_contracttype" deletable="false" movable="false">
+                <field name="TYPE_LIST">both</field>
+                <next>
+                  <block type="trade_definition_candleinterval" id="iconic_candle" deletable="false" movable="false">
+                    <field name="CANDLEINTERVAL_LIST">60</field>
+                    <next>
+                      <block type="trade_definition_restartbuysell" id="iconic_restart_buy_sell" deletable="false" movable="false">
+                        <field name="TIME_MACHINE_ENABLED">FALSE</field>
+                        <next>
+                          <block type="trade_definition_restartonerror" id="iconic_restart_error" deletable="false" movable="false">
+                            <field name="RESTARTONERROR">TRUE</field>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+    <statement name="SUBMARKET">
+      <block type="trade_definition_tradeoptions" id="iconic_trade_options">
+        <mutation has_first_barrier="false" has_second_barrier="false" has_prediction="false"></mutation>
+        <field name="DURATIONTYPE_LIST">t</field>
+        <field name="CURRENCY_LIST">USD</field>
+        <value name="DURATION">
+          <shadow type="math_number_positive">
+            <field name="NUM">1</field>
+          </shadow>
+        </value>
+        <value name="AMOUNT">
+          <shadow type="math_number_positive">
+            <field name="NUM">1</field>
+          </shadow>
+        </value>
+        <field name="AMOUNT_LIMITS"></field>
+      </block>
+    </statement>
+  </block>
+
+  <block type="during_purchase" id="iconic_during_purchase" x="720" y="0">
+    <statement name="DURING_PURCHASE_STACK">
+      <block type="controls_if" id="iconic_check_sell">
+        <value name="IF0">
+          <block type="check_sell" id="iconic_sell_check"></block>
+        </value>
+      </block>
+    </statement>
+  </block>
+
+  <block type="after_purchase" id="iconic_after_purchase" x="720" y="250">
+    <statement name="AFTERPURCHASE_STACK">
+      <block type="controls_if" id="iconic_result_if">
+        <value name="IF0">
+          <block type="contract_check_result" id="iconic_win_check">
+            <field name="CHECK_RESULT">win</field>
+          </block>
+        </value>
+        <statement name="DO0">
+          <block type="variables_set" id="iconic_reset_type">
+            <field name="VAR" id="iconic_contract_type">Contract Type</field>
+            <value name="VALUE">
+              <block type="text" id="iconic_even_text">
+                <field name="TEXT">Even</field>
+              </block>
+            </value>
+          </block>
+        </statement>
+        <next>
+          <block type="controls_if" id="iconic_trade_again">
+            <value name="IF0">
+              <block type="logic_boolean" id="iconic_true">
+                <field name="BOOL">TRUE</field>
+              </block>
+            </value>
+            <statement name="DO0">
+              <block type="trade_again" id="iconic_trade_again_block"></block>
+            </statement>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+
+  <block type="before_purchase" id="iconic_before_purchase" x="0" y="650">
+    <statement name="BEFOREPURCHASE_STACK">
+      <block type="controls_if" id="iconic_even_odd">
+        <mutation else="1"></mutation>
+        <value name="IF0">
+          <block type="logic_compare" id="iconic_compare">
+            <field name="OP">EQ</field>
+            <value name="A">
+              <block type="variables_get" id="iconic_get_type">
+                <field name="VAR" id="iconic_contract_type">Contract Type</field>
+              </block>
+            </value>
+            <value name="B">
+              <block type="text" id="iconic_even_compare">
+                <field name="TEXT">Even</field>
+              </block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO0">
+          <block type="purchase" id="iconic_purchase_even">
+            <field name="PURCHASE_LIST">DIGITEVEN</field>
+          </block>
+        </statement>
+        <statement name="ELSE">
+          <block type="purchase" id="iconic_purchase_odd">
+            <field name="PURCHASE_LIST">DIGITODD</field>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+</xml>
