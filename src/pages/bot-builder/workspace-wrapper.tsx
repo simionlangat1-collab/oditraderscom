@@ -8,11 +8,17 @@ import Toolbox from './toolbox';
 import './workspace.scss';
 
 const WorkspaceWrapper = observer(() => {
-    const { blockly_store } = useStore();
+    const { app, blockly_store } = useStore();
     const { onMount, onUnmount, is_loading } = blockly_store;
 
     React.useEffect(() => {
         onMount();
+        // Bot Builder owns the actual #scratch_div container. Trigger the
+        // app-level DBot initialization after this component has mounted so
+        // Blockly cannot miss its target container during startup.
+        app.onMount().catch(error => {
+            console.error('Failed to initialize Bot Builder workspace:', error);
+        });
         return () => {
             onUnmount();
         };
