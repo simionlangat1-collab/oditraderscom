@@ -15,7 +15,7 @@ import QuickStrategy1 from './quick-strategy';
 import WorkspaceWrapper from './workspace-wrapper';
 
 const BotBuilder = observer(() => {
-    const { dashboard, app, run_panel, toolbar, quick_strategy, blockly_store } = useStore();
+    const { dashboard, run_panel, toolbar, quick_strategy, blockly_store } = useStore();
     const { active_tab, active_tour, is_preview_on_popup } = dashboard;
     const { is_open } = quick_strategy;
     const { is_running } = run_panel;
@@ -49,38 +49,6 @@ const BotBuilder = observer(() => {
     // const isMounted = useIsMounted();
     // const { data: remote_config_data } = useRemoteConfig(isMounted());
     let deleted_block_id: null | string = null;
-
-    React.useEffect(() => {
-        onMount();
-        return () => onUnmount();
-    }, [onMount, onUnmount]);
-
-    React.useEffect(() => {
-        if (active_tab !== 1 || window.Blockly?.derivWorkspace || is_loading) return;
-
-        let retry_timer: ReturnType<typeof setTimeout> | null = null;
-        let cancelled = false;
-
-        const ensureWorkspace = async () => {
-            // The app shell now mounts before API/DBot stores finish initializing.
-            // If the first mount happened too early, retry when Bot Builder becomes
-            // active instead of leaving the Blockly canvas permanently blank.
-            if (cancelled || window.Blockly?.derivWorkspace) return;
-
-            await onMount();
-
-            if (!cancelled && !window.Blockly?.derivWorkspace) {
-                retry_timer = setTimeout(ensureWorkspace, 500);
-            }
-        };
-
-        ensureWorkspace();
-
-        return () => {
-            cancelled = true;
-            if (retry_timer) clearTimeout(retry_timer);
-        };
-    }, [active_tab, is_loading, onMount]);
 
     React.useEffect(() => {
         let retry_timer: ReturnType<typeof setTimeout> | null = null;
