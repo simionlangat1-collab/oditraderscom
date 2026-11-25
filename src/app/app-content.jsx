@@ -131,6 +131,14 @@ const AppContent = observer(() => {
         app.setDBotEngineStores();
         ApiHelpers.setInstance(app.api_helpers_store);
 
+        // BotBuilder is already mounted before API initialization completes.
+        // Initialize Blockly only after its stores exist and #scratch_div is in the DOM.
+        if (document.getElementById('scratch_div')) {
+            app.onMount().catch(error => {
+                console.error('Failed to initialize Bot Builder workspace:', error);
+            });
+        }
+
         import('@/utils/gtm').then(({ default: GTM }) => {
             GTM.init(store);
         });
