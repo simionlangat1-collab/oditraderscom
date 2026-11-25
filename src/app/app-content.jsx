@@ -38,7 +38,7 @@ const AppContent = observer(() => {
     const [is_loading, setIsLoading] = React.useState(true);
 
     const store = useStore();
-    const { app, transactions, common, client } = store;
+    const { app, transactions, common, client, blockly_store } = store;
     const { is_dark_mode_on } = useThemeSwitcher();
 
     const { recovered_transactions, recoverPendingContracts } = transactions;
@@ -178,6 +178,19 @@ const AppContent = observer(() => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [is_api_initialized, client.loginid]);
+
+    // The premium startup must not hand control to the dashboard while the
+    // original Blockly loader is still active. That loader is the five-bar
+    // animation that can otherwise sit above the dashboard after the golden
+    // orb completes its lap.
+    React.useEffect(() => {
+        const startup_ready = !is_loading && !blockly_store.is_loading;
+
+        if (!startup_ready && !common?.error) return;
+
+        document.documentElement.dataset.odtStartupReady = 'true';
+        window.dispatchEvent(new Event('odt-startup-ready'));
+    }, [is_loading, blockly_store.is_loading, common?.error]);
 
     if (common?.error) return null;
 
