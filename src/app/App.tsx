@@ -17,14 +17,6 @@ import './app-root.scss';
 const Layout = lazy(() => import('../components/layout'));
 const AppRoot = lazy(() => import('./app-root'));
 
-const StartupReadySignal = ({ onReady }: { onReady: () => void }) => {
-    useEffect(() => {
-        onReady();
-    }, [onReady]);
-
-    return null;
-};
-
 /**
  * Keeps the premium startup animation visible for one complete orbital lap.
  * The dashboard is revealed only after both the app shell is ready and the
@@ -34,6 +26,21 @@ const StartupGate = () => {
     const [orbitComplete, setOrbitComplete] = useState(false);
     const [appReady, setAppReady] = useState(false);
     const markAppReady = useCallback(() => setAppReady(true), []);
+
+    useEffect(() => {
+        const handleAppReady = () => markAppReady();
+
+        // AppContent may finish initialization before this effect runs.
+        // Keep the readiness flag on the document so the signal cannot be missed.
+        if (document.documentElement.dataset.odtStartupReady === 'true') {
+            markAppReady();
+            return;
+        }
+
+        window.addEventListener('odt-startup-ready', handleAppReady);
+        return () => window.removeEventListener('odt-startup-ready', handleAppReady);
+    }, [markAppReady]);
+
     const startupComplete = orbitComplete && appReady;
 
     return (
@@ -47,7 +54,6 @@ const StartupGate = () => {
                                     <RoutePromptDialog />
                                     <CoreStoreProvider>
                                         <Layout />
-                                        <StartupReadySignal onReady={markAppReady} />
                                     </CoreStoreProvider>
                                 </LocalStorageSyncWrapper>
                             </StoreProvider>
