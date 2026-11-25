@@ -36,6 +36,7 @@ const PreviewBranding =
 const AppContent = observer(() => {
     const [is_api_initialized, setIsApiInitialized] = React.useState(false);
     const [is_loading, setIsLoading] = React.useState(true);
+    const dbot_workspace_init_started = React.useRef(false);
 
     const store = useStore();
     const { app, transactions, common, client } = store;
@@ -131,6 +132,17 @@ const AppContent = observer(() => {
         ServerTime.init(common);
         app.setDBotEngineStores();
         ApiHelpers.setInstance(app.api_helpers_store);
+
+        // Initialize Blockly after the DBot stores exist. This keeps the
+        // six-second startup gate independent while ensuring Bot Builder
+        // is not an empty canvas when the tab is opened.
+        if (!dbot_workspace_init_started.current) {
+            dbot_workspace_init_started.current = true;
+            app.onMount().catch(error => {
+                dbot_workspace_init_started.current = false;
+                console.error('Failed to initialize Bot Builder workspace:', error);
+            });
+        }
         import('@/utils/gtm').then(({ default: GTM }) => {
             GTM.init(store);
         });
