@@ -14,7 +14,6 @@ export default class AppStore {
     disposeReloadOnLanguageChangeReaction: unknown;
     disposeCurrencyReaction: unknown;
     disposeSwitchAccountListener: unknown;
-
     disposeResidenceChangeReaction: unknown;
 
     constructor(root_store: RootStore, core: RootStore['core']) {
@@ -23,7 +22,6 @@ export default class AppStore {
             onUnmount: action,
             registerCurrencyReaction: action,
             registerOnAccountSwitch: action,
-
             registerResidenceChangeReaction: action,
             setDBotEngineStores: action,
             onClickOutsideBlockly: action,
@@ -37,6 +35,10 @@ export default class AppStore {
     }
 
     onMount = async () => {
+        // The dashboard mounts before the API/DBot stores are ready. A premature
+        // call must be harmless; AppContent calls this again after setDBotEngineStores().
+        if (window.Blockly?.derivWorkspace || !this.dbot_store) return;
+
         const { blockly_store, run_panel } = this.root_store;
         const { ui } = this.core;
 
@@ -54,8 +56,6 @@ export default class AppStore {
             }
         }, 10000);
 
-        if (!this.dbot_store) return;
-
         blockly_store.setLoading(true);
         await DBot.initWorkspace('/', this.dbot_store, this.api_helpers_store, ui.is_mobile, false);
 
@@ -64,7 +64,6 @@ export default class AppStore {
 
         this.registerCurrencyReaction.call(this);
         this.registerOnAccountSwitch.call(this);
-
         this.registerResidenceChangeReaction.call(this);
 
         window.addEventListener('click', this.onClickOutsideBlockly);
@@ -88,17 +87,13 @@ export default class AppStore {
         if (typeof this.disposeSwitchAccountListener === 'function') {
             this.disposeSwitchAccountListener();
         }
-
         if (typeof this.disposeResidenceChangeReaction === 'function') {
             this.disposeResidenceChangeReaction();
         }
 
         window.removeEventListener('click', this.onClickOutsideBlockly);
 
-        // Ensure account switch is re-enabled.
-        // TODO: fix
         const { ui } = this.core;
-
         ui.setAccountSwitcherDisabledMessage();
         ui.setPromptHandler(false);
 
@@ -107,7 +102,6 @@ export default class AppStore {
     };
 
     registerCurrencyReaction = () => {
-        // Syncs all trade options blocks' currency with the client's active currency.
         this.disposeCurrencyReaction = reaction(
             () => this.core.client.currency,
             () => {
@@ -168,7 +162,6 @@ export default class AppStore {
 
     registerResidenceChangeReaction = () => {
         // Country code no longer available from removed get_settings API
-        // Previously set up residence change reaction here
     };
 
     setDBotEngineStores = () => {
@@ -211,7 +204,7 @@ export default class AppStore {
             );
 
             if (is_click_outside_blockly) {
-                window.Blockly?.hideChaff(/* allowToolbox */ false);
+                window.Blockly?.hideChaff(false);
             }
         }
     };
