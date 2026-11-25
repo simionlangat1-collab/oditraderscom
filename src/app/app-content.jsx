@@ -38,7 +38,7 @@ const AppContent = observer(() => {
     const [is_loading, setIsLoading] = React.useState(true);
 
     const store = useStore();
-    const { app, transactions, common, client, blockly_store } = store;
+    const { app, transactions, common, client } = store;
     const { is_dark_mode_on } = useThemeSwitcher();
 
     const { recovered_transactions, recoverPendingContracts } = transactions;
@@ -179,18 +179,9 @@ const AppContent = observer(() => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [is_api_initialized, client.loginid]);
 
-    // The premium startup must not hand control to the dashboard while the
-    // original Blockly loader is still active. That loader is the five-bar
-    // animation that can otherwise sit above the dashboard after the golden
-    // orb completes its lap.
-    React.useEffect(() => {
-        const startup_ready = !is_loading && !blockly_store.is_loading;
-
-        if (!startup_ready && !common?.error) return;
-
-        document.documentElement.dataset.odtStartupReady = 'true';
-        window.dispatchEvent(new Event('odt-startup-ready'));
-    }, [is_loading, blockly_store.is_loading, common?.error]);
+    // Startup timing is controlled exclusively by the six-second golden-orb
+    // animation in App.tsx. Initialization is allowed to continue in the
+    // already-mounted dashboard instead of replacing it with a second loader.
 
     if (common?.error) return null;
 
@@ -201,23 +192,19 @@ const AppContent = observer(() => {
                     <PreviewBranding />
                 </Suspense>
             )}
-            {is_loading ? (
-                <ChunkLoader message={localize('Initializing Deriv Bot account...')} />
-            ) : (
-                <AuthLoadingWrapper>
-                    <ThemeProvider theme={is_dark_mode_on ? 'dark' : 'light'}>
-                        <BlocklyLoading />
-                        <div className='bot-dashboard bot' data-testid='dt_bot_dashboard'>
-                            <Audio />
-                            <Main />
-                            <BotBuilder />
-                            <BotStopped />
-                            <TransactionDetailsModal />
-                            <ToastContainer limit={3} draggable={false} />
-                        </div>
-                    </ThemeProvider>
-                </AuthLoadingWrapper>
-            )}
+            <AuthLoadingWrapper>
+                <ThemeProvider theme={is_dark_mode_on ? 'dark' : 'light'}>
+                    <BlocklyLoading />
+                    <div className='bot-dashboard bot' data-testid='dt_bot_dashboard'>
+                        <Audio />
+                        <Main />
+                        <BotBuilder />
+                        <BotStopped />
+                        <TransactionDetailsModal />
+                        <ToastContainer limit={3} draggable={false} />
+                    </div>
+                </ThemeProvider>
+            </AuthLoadingWrapper>
         </React.Fragment>
     );
 });
