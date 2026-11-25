@@ -23,7 +23,6 @@ const BotBuilder = observer(() => {
     const is_blockly_listener_registered = React.useRef(false);
     const is_blockly_delete_listener_registered = React.useRef(false);
     const { isDesktop } = useDevice();
-    const { onMount, onUnmount } = app;
     const el_ref = React.useRef<HTMLInputElement | null>(null);
 
     const loadIconicBot = React.useCallback((xml: string) => {
