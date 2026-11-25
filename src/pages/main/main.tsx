@@ -44,6 +44,7 @@ import Dashboard from '../dashboard';
 import TradingCenter from '../trading-center/trading-center';
 import FreeBots from '../free-bots/free-bots';
 import ManualTrader from '../manual-trader/manual-trader';
+import iconic_bot_xml from '@/xml/iconic-bot.xml?raw';
 import RunStrategy from '../dashboard/run-strategy';
 import './main.scss';
 
@@ -427,7 +428,16 @@ const AppWrapper = observer(() => {
                                 }
                                 id='id-free-bots'
                             >
-                                <FreeBots onOpenBotBuilder={() => handleTabChange(BOT_BUILDER)} />
+                                <FreeBots
+                                    onOpenBotBuilder={() => {
+                                        window.dispatchEvent(
+                                            new CustomEvent('odt-open-iconic-bot', {
+                                                detail: { xml: iconic_bot_xml },
+                                            })
+                                        );
+                                        handleTabChange(BOT_BUILDER);
+                                    }}
+                                />
                             </div>
                             <div
                                 label={
