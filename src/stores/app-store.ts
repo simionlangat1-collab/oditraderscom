@@ -11,6 +11,7 @@ export default class AppStore {
     dbot_store: RootStore | null;
     api_helpers_store: TApiHelpersStore | null;
     timer: ReturnType<typeof setInterval> | null;
+    workspace_init_promise: Promise<void> | null;
     disposeReloadOnLanguageChangeReaction: unknown;
     disposeCurrencyReaction: unknown;
     disposeSwitchAccountListener: unknown;
@@ -32,17 +33,22 @@ export default class AppStore {
         this.dbot_store = null;
         this.api_helpers_store = null;
         this.timer = null;
+        this.workspace_init_promise = null;
     }
 
     onMount = async () => {
-        // The dashboard mounts before the API/DBot stores are ready. A premature
-        // call must be harmless; AppContent calls this again after setDBotEngineStores().
-        if (window.Blockly?.derivWorkspace || !this.dbot_store) return;
+        // The workspace can be requested by more than one mount path. Keep a
+        // single initialization promise so two concurrent DBot.initWorkspace()
+        // calls can never race and leave Blockly in a blank state.
+        if (window.Blockly?.derivWorkspace) return;
+        if (this.workspace_init_promise) return this.workspace_init_promise;
+        if (!this.dbot_store) return;
 
-        const { blockly_store, run_panel } = this.root_store;
-        const { ui } = this.core;
+        this.workspace_init_promise = (async () => {
+            const { blockly_store, run_panel } = this.root_store;
+            const { ui } = this.core;
 
-        let timer_counter = 1;
+            let timer_counter = 1;
 
         this.timer = setInterval(() => {
             if (window.sendRequestsStatistic) {
@@ -68,7 +74,13 @@ export default class AppStore {
 
         window.addEventListener('click', this.onClickOutsideBlockly);
 
-        blockly_store.getCachedActiveTab();
+            blockly_store.getCachedActiveTab();
+        })().catch(error => {
+            this.workspace_init_promise = null;
+            throw error;
+        });
+
+        return this.workspace_init_promise;
     };
 
     onUnmount = () => {
