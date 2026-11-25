@@ -32,6 +32,13 @@ const BotBuilder = observer(() => {
     let deleted_block_id: null | string = null;
 
     React.useEffect(() => {
+        onMount();
+        return () => onUnmount();
+    }, [onMount, onUnmount]);
+
+    React.useEffect(() => {
+        if (active_tab !== 1 || window.Blockly?.derivWorkspace || is_loading) return;
+
         let retry_timer: ReturnType<typeof setTimeout> | null = null;
         let cancelled = false;
 
@@ -40,11 +47,6 @@ const BotBuilder = observer(() => {
             // If the first mount happened too early, retry when Bot Builder becomes
             // active instead of leaving the Blockly canvas permanently blank.
             if (cancelled || window.Blockly?.derivWorkspace) return;
-
-            if (is_loading) {
-                retry_timer = setTimeout(ensureWorkspace, 250);
-                return;
-            }
 
             await onMount();
 
@@ -58,9 +60,8 @@ const BotBuilder = observer(() => {
         return () => {
             cancelled = true;
             if (retry_timer) clearTimeout(retry_timer);
-            onUnmount();
         };
-    }, [active_tab, is_loading, onMount, onUnmount]);
+    }, [active_tab, is_loading, onMount]);
 
     React.useEffect(() => {
         const workspace = window.Blockly?.derivWorkspace;
