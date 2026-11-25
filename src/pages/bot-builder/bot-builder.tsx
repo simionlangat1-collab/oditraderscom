@@ -26,6 +26,25 @@ const BotBuilder = observer(() => {
     const { onMount, onUnmount } = app;
     const el_ref = React.useRef<HTMLInputElement | null>(null);
 
+    const loadIconicBot = React.useCallback((xml: string) => {
+        const workspace = window.Blockly?.derivWorkspace;
+        if (!workspace || !xml) return false;
+
+        try {
+            workspace.clear();
+            window.Blockly.Xml.domToWorkspace(window.Blockly.utils.xml.textToDom(xml), workspace);
+            workspace.strategy_to_load = xml;
+            window.Blockly.getMainWorkspace().strategy_to_load = xml;
+            workspace.clearUndo();
+            workspace.cleanUp(0, 56);
+            window.dispatchEvent(new Event('resize'));
+            return true;
+        } catch (error) {
+            console.error('Failed to load Iconic Bot strategy:', error);
+            return false;
+        }
+    }, []);
+
     // TODO: fix
     // const isMounted = useIsMounted();
     // const { data: remote_config_data } = useRemoteConfig(isMounted());
@@ -62,6 +81,32 @@ const BotBuilder = observer(() => {
             if (retry_timer) clearTimeout(retry_timer);
         };
     }, [active_tab, is_loading, onMount]);
+
+    React.useEffect(() => {
+        let retry_timer: ReturnType<typeof setTimeout> | null = null;
+        let cancelled = false;
+
+        const handleIconicBotRequest = (event: Event) => {
+            const xml = (event as CustomEvent<{ xml?: string }>).detail?.xml;
+            if (!xml) return;
+
+            const tryLoad = () => {
+                if (cancelled) return;
+                if (loadIconicBot(xml)) return;
+                retry_timer = setTimeout(tryLoad, 300);
+            };
+
+            tryLoad();
+        };
+
+        window.addEventListener('odt-open-iconic-bot', handleIconicBotRequest);
+
+        return () => {
+            cancelled = true;
+            if (retry_timer) clearTimeout(retry_timer);
+            window.removeEventListener('odt-open-iconic-bot', handleIconicBotRequest);
+        };
+    }, [loadIconicBot]);
 
     React.useEffect(() => {
         const workspace = window.Blockly?.derivWorkspace;
