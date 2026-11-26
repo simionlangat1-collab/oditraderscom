@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import Flyout from '@/components/flyout';
 import { useStore } from '@/hooks/useStore';
@@ -10,6 +10,7 @@ import './workspace.scss';
 const WorkspaceWrapper = observer(() => {
     const { app, blockly_store } = useStore();
     const { onMount, onUnmount, is_loading } = blockly_store;
+    const [workspace_ready, setWorkspaceReady] = useState(!!window.Blockly?.derivWorkspace);
 
     React.useEffect(() => {
         onMount();
@@ -23,7 +24,12 @@ const WorkspaceWrapper = observer(() => {
         let cancelled = false;
 
         const ensureWorkspace = async () => {
-            if (cancelled || window.Blockly?.derivWorkspace) return;
+            if (cancelled) return;
+
+            if (window.Blockly?.derivWorkspace) {
+                setWorkspaceReady(true);
+                return;
+            }
 
             try {
                 await app.onMount();
@@ -31,7 +37,12 @@ const WorkspaceWrapper = observer(() => {
                 console.error('Failed to initialize Bot Builder workspace:', error);
             }
 
-            if (!cancelled && !window.Blockly?.derivWorkspace && retry_count < 30) {
+            if (!cancelled && window.Blockly?.derivWorkspace) {
+                setWorkspaceReady(true);
+                return;
+            }
+
+            if (!cancelled && retry_count < 30) {
                 retry_count += 1;
                 retry_timer = setTimeout(ensureWorkspace, 250);
             }
