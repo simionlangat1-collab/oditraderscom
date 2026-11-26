@@ -3,6 +3,21 @@
     <variable id="iconic_contract_type">Contract Type</variable>
   </variables>
   <block type="trade_definition" id="iconic_trade_definition" x="0" y="0">
+    <statement name="RISK_PARAMETERS">
+      <block type="trade_definition_targetprofit" id="iconic_target_profit" deletable="false" movable="false">
+        <field name="ICONIC_TARGET_PROFIT">0</field>
+        <next>
+          <block type="trade_definition_stoploss" id="iconic_stop_loss" deletable="false" movable="false">
+            <field name="ICONIC_STOP_LOSS">0</field>
+            <next>
+              <block type="trade_definition_martingale" id="iconic_martingale" deletable="false" movable="false">
+                <field name="ICONIC_MARTINGALE">0</field>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
     <statement name="TRADE_OPTIONS">
       <block type="trade_definition_market" id="iconic_market" deletable="false" movable="false">
         <field name="MARKET_LIST">volidx</field>
