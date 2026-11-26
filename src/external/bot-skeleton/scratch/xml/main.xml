@@ -1,6 +1,21 @@
 <xml xmlns="http://www.w3.org/1999/xhtml" collection="false" is_dbot="true">
   <variables></variables>
   <block type="trade_definition" x="0" y="0">
+    <statement name="RISK_PARAMETERS">
+      <block type="trade_definition_targetprofit" deletable="false" movable="false">
+        <field name="ICONIC_TARGET_PROFIT">0</field>
+        <next>
+          <block type="trade_definition_stoploss" deletable="false" movable="false">
+            <field name="ICONIC_STOP_LOSS">0</field>
+            <next>
+              <block type="trade_definition_martingale" deletable="false" movable="false">
+                <field name="ICONIC_MARTINGALE">0</field>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
     <statement name="TRADE_OPTIONS">
       <block type="trade_definition_market" deletable="false" movable="false">
         <field name="MARKET_LIST"></field>
