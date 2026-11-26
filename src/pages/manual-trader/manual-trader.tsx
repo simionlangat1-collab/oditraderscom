@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 import { CONNECTION_STATUS, connectionStatus$ } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
+import { doUntilDone } from '@/external/bot-skeleton/services/tradeEngine/utils/helpers';
 import { manualTradeService } from './services/manual-trade-service';
 import { TradeControls } from './components/trade-controls';
 import { TradeHistory } from './components/trade-history';
@@ -176,31 +177,28 @@ const ManualTrader = () => {
 
         const startStream = async () => {
             try {
-                // One Deriv subscription supplies both initial history and live ticks.
-                const response: any = await api.send({
-                    ticks_history: symbol,
-                    end: 'latest',
-                    count: TICK_WINDOW,
-                    style: 'ticks',
-                    subscribe: 1,
-                });
+                // Fetch history separately, then create a dedicated live-tick
+                // subscription. Deriv's ticks_history response is a history
+                // message; it is not the live msg_type: "tick" stream consumed
+                // by the listener above.
+                const historyResponse: any = await doUntilDone(
+                    () => api.send({
+                        ticks_history: symbol,
+                        end: 'latest',
+                        count: TICK_WINDOW,
+                        style: 'ticks',
+                    }),
+                    [],
+                    api_base
+                );
 
-                const responseData = response?.data ?? response;
-                if (responseData?.error || response?.error) {
-                    const apiError = responseData?.error || response.error;
-                    throw new Error(apiError.message || 'Unable to subscribe to market ticks.');
+                const historyData = historyResponse?.data ?? historyResponse;
+                if (historyData?.error) {
+                    throw new Error(historyData.error.message || 'Unable to load market tick history.');
                 }
+                if (!active) return;
 
-                subscriptionId = responseData?.subscription?.id || response?.subscription?.id || '';
-                if (!active) {
-                    if (subscriptionId) void api.send({ forget: subscriptionId });
-                    return;
-                }
-                if (!subscriptionId) {
-                    throw new Error('Deriv did not create the live tick subscription.');
-                }
-
-                const history = responseData?.history;
+                const history = historyData?.history;
                 const prices: (number | string)[] = history?.prices || [];
                 const times: number[] = history?.times || [];
                 const historicalTicks = prices.map((price, index) => ({
@@ -211,15 +209,32 @@ const ManualTrader = () => {
 
                 if (historicalTicks.length) {
                     const latestHistoricalTick = historicalTicks[historicalTicks.length - 1];
-                    if (!latestDigitTickRef.current || latestHistoricalTick.epoch >= latestDigitTickRef.current.epoch) {
-                        latestDigitTickRef.current = latestHistoricalTick;
-                    }
-                    setDigitTicks(previous => [...historicalTicks, ...previous]
-                        .sort((a, b) => a.epoch - b.epoch)
-                        .slice(-TICK_WINDOW));
+                    latestDigitTickRef.current = latestHistoricalTick;
+                    setDigitTicks(historicalTicks.slice(-TICK_WINDOW));
                 }
 
-                // Wait for an actual tick message before showing Connected.
+                // Subscribe with the dedicated ticks endpoint. This endpoint
+                // emits msg_type: "tick", which the listener above processes.
+                const tickResponse: any = await doUntilDone(
+                    () => api.send({ ticks: symbol, subscribe: 1 }),
+                    [],
+                    api_base
+                );
+                const tickData = tickResponse?.data ?? tickResponse;
+                if (tickData?.error) {
+                    throw new Error(tickData.error.message || 'Unable to subscribe to live market ticks.');
+                }
+
+                subscriptionId = tickData?.subscription?.id || tickResponse?.subscription?.id || '';
+                if (!active) {
+                    if (subscriptionId) void api.send({ forget: subscriptionId });
+                    return;
+                }
+                if (!subscriptionId) {
+                    throw new Error('Deriv did not create the live tick subscription.');
+                }
+                // The stream becomes Connected only after an actual live tick
+                // arrives; history and subscription acknowledgement are not ticks.
             } catch (requestError) {
                 if (!active) return;
                 setTickError(requestError instanceof Error ? requestError.message : 'Unable to stream market ticks.');
