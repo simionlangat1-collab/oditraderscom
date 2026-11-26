@@ -117,6 +117,7 @@ export default class AppStore {
         ui.setPromptHandler(false);
 
         if (this.timer) clearInterval(this.timer);
+        this.workspace_init_promise = null;
         performance.clearMeasures();
     };
 
