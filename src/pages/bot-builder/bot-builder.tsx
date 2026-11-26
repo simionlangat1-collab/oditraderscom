@@ -46,42 +46,6 @@ const BotBuilder = observer(() => {
     }, []);
 
     React.useEffect(() => {
-        let cancelled = false;
-        let retry_timer: ReturnType<typeof setTimeout> | null = null;
-        let attempts = 0;
-
-        const initializeWorkspace = async () => {
-            if (cancelled || window.Blockly?.derivWorkspace) return;
-
-            // Bot Builder is mounted before AppContent finishes API initialization.
-            // Ensure the DBot stores exist before asking DBot to inject Blockly into
-            // the already-mounted #scratch_div container.
-            try {
-                app.setDBotEngineStores();
-                await onMount();
-            } catch (error) {
-                console.error('Bot Builder workspace initialization failed:', error);
-            }
-
-            if (!cancelled && !window.Blockly?.derivWorkspace && attempts < 40) {
-                attempts += 1;
-                retry_timer = setTimeout(initializeWorkspace, 500);
-            }
-        };
-
-        // Wait one paint so #scratch_div is definitely present in the DOM.
-        requestAnimationFrame(() => {
-            void initializeWorkspace();
-        });
-
-        return () => {
-            cancelled = true;
-            if (retry_timer) clearTimeout(retry_timer);
-            onUnmount();
-        };
-    }, [app, onMount, onUnmount]);
-
-    React.useEffect(() => {
         onMount();
         return () => onUnmount();
     }, [onMount, onUnmount]);
