@@ -102,7 +102,7 @@ export const ToolboxItems = () =>
                     </Statement>
                 </Block>
                 <Block type='trade_definition_tradeoptions'>
-                    <Mutation has_first_barrier='false' has_second_barrier='false' has_prediction='false' />
+                    <Mutation has_first_barrier='false' has_second_barrier='false' has_prediction='true' />
                     <Field name='DURATIONTYPE_LIST' />
                     <Field name='CURRENCY_LIST'>USD</Field>
                     <Value name='DURATION'>
