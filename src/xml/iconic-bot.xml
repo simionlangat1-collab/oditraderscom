@@ -53,7 +53,7 @@
     </statement>
     <statement name="SUBMARKET">
       <block type="trade_definition_tradeoptions" id="iconic_trade_options">
-        <mutation has_first_barrier="false" has_second_barrier="false" has_prediction="false"></mutation>
+        <mutation has_first_barrier="false" has_second_barrier="false" has_prediction="true"></mutation>
         <field name="DURATIONTYPE_LIST">t</field>
         <field name="CURRENCY_LIST">USD</field>
         <value name="DURATION">
