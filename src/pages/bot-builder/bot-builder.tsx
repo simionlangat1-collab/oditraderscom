@@ -15,7 +15,7 @@ import QuickStrategy1 from './quick-strategy';
 import WorkspaceWrapper from './workspace-wrapper';
 
 const BotBuilder = observer(() => {
-    const { dashboard, run_panel, toolbar, quick_strategy, blockly_store } = useStore();
+    const { dashboard, app, run_panel, toolbar, quick_strategy, blockly_store } = useStore();
     const { active_tab, active_tour, is_preview_on_popup } = dashboard;
     const { is_open } = quick_strategy;
     const { is_running } = run_panel;
@@ -23,6 +23,7 @@ const BotBuilder = observer(() => {
     const is_blockly_listener_registered = React.useRef(false);
     const is_blockly_delete_listener_registered = React.useRef(false);
     const { isDesktop } = useDevice();
+    const { onMount, onUnmount } = app;
     const el_ref = React.useRef<HTMLInputElement | null>(null);
 
     const loadIconicBot = React.useCallback((xml: string) => {
@@ -43,6 +44,11 @@ const BotBuilder = observer(() => {
             return false;
         }
     }, []);
+
+    React.useEffect(() => {
+        onMount();
+        return () => onUnmount();
+    }, [onMount, onUnmount]);
 
     // TODO: fix
     // const isMounted = useIsMounted();
