@@ -19,15 +19,12 @@ window.Blockly.Blocks.trade_definition = {
     definition() {
         return {
             message0: '%1 %2 %3',
-            message1: '%1',
-            message2: '%1 %2 %3',
+            message1: '%1 %2 %3',
+            message2: '%1',
             message3: '%1',
-            message4: '%1 %2 %3 %4',
-            message5: '%1 %2 %3 %4',
-            message6: '%1 %2 %3 %4',
-            message7: '%1 %2 %3',
-            message8: '%1',
-            message9: '%1',
+            message4: '%1 %2 %3',
+            message5: '%1',
+            message6: '%1',
             args0: [
                 {
                     type: 'field_image',
@@ -47,14 +44,8 @@ window.Blockly.Blocks.trade_definition = {
             ],
             args1: [
                 {
-                    type: 'input_statement',
-                    name: 'TRADE_OPTIONS',
-                },
-            ],
-            args2: [
-                {
                     type: 'field_image',
-                    src: ' ', // this is here to add extra padding
+                    src: ' ',
                     width: 4,
                     height: 25,
                 },
@@ -67,83 +58,21 @@ window.Blockly.Blocks.trade_definition = {
                     type: 'input_dummy',
                 },
             ],
-            args3: [
+            args2: [
                 {
                     type: 'input_statement',
                     name: 'INITIALIZATION',
                     check: null,
                 },
             ],
+            args3: [
+                {
+                    type: 'input_statement',
+                    name: 'RISK_PARAMETERS',
+                    check: null,
+                },
+            ],
             args4: [
-                {
-                    type: 'field_image',
-                    src: ' ', // this is here to add extra padding
-                    width: 4,
-                    height: 25,
-                },
-                {
-                    type: 'field_label',
-                    text: localize('Target Profit'),
-                },
-                {
-                    type: 'field_number',
-                    name: 'ICONIC_TARGET_PROFIT',
-                    value: 0,
-                    min: 0,
-                    precision: 0.01,
-                },
-                {
-                    type: 'field_label',
-                    text: ')',
-                },
-            ],
-            args5: [
-                {
-                    type: 'field_image',
-                    src: ' ',
-                    width: 4,
-                    height: 25,
-                },
-                {
-                    type: 'field_label',
-                    text: localize('Stop Loss'),
-                },
-                {
-                    type: 'field_number',
-                    name: 'ICONIC_STOP_LOSS',
-                    value: 0,
-                    min: 0,
-                    precision: 0.01,
-                },
-                {
-                    type: 'field_label',
-                    text: ')',
-                },
-            ],
-            args6: [
-                {
-                    type: 'field_image',
-                    src: ' ',
-                    width: 4,
-                    height: 25,
-                },
-                {
-                    type: 'field_label',
-                    text: localize('Martingale'),
-                },
-                {
-                    type: 'field_number',
-                    name: 'ICONIC_MARTINGALE',
-                    value: 0,
-                    min: 0,
-                    precision: 0.01,
-                },
-                {
-                    type: 'field_label',
-                    text: ')',
-                },
-            ],
-            args7: [
                 {
                     type: 'field_image',
                     src: ' ', // this is here to add extra padding
@@ -159,13 +88,13 @@ window.Blockly.Blocks.trade_definition = {
                     type: 'input_dummy',
                 },
             ],
-            args8: [
+            args5: [
                 {
                     type: 'input_statement',
                     name: 'SUBMARKET',
                 },
             ],
-            args9: [
+            args6: [
                 {
                     type: 'field_image',
                     src: ' ', // this is here to add extra padding
@@ -209,6 +138,22 @@ window.Blockly.Blocks.trade_definition = {
             (event.type === window.Blockly.Events.BLOCK_DRAG && !event.isStart)
         ) {
             // Enforce only trade_definition_<type> blocks in TRADE_OPTIONS statement.
+            const blocks_in_risk_parameters = this.getBlocksInStatement('RISK_PARAMETERS');
+
+            blocks_in_risk_parameters.forEach(block => {
+                if (
+                    ![
+                        'trade_definition_targetprofit',
+                        'trade_definition_stoploss',
+                        'trade_definition_martingale',
+                    ].includes(block.type)
+                ) {
+                    runIrreversibleEvents(() => {
+                        block.unplug(true);
+                    });
+                }
+            });
+
             const blocks_in_trade_options = this.getBlocksInStatement('TRADE_OPTIONS');
 
             if (blocks_in_trade_options.length > 0) {
