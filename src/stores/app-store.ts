@@ -11,10 +11,10 @@ export default class AppStore {
     dbot_store: RootStore | null;
     api_helpers_store: TApiHelpersStore | null;
     timer: ReturnType<typeof setInterval> | null;
-    workspace_init_promise: Promise<void> | null;
     disposeReloadOnLanguageChangeReaction: unknown;
     disposeCurrencyReaction: unknown;
     disposeSwitchAccountListener: unknown;
+
     disposeResidenceChangeReaction: unknown;
 
     constructor(root_store: RootStore, core: RootStore['core']) {
@@ -23,6 +23,7 @@ export default class AppStore {
             onUnmount: action,
             registerCurrencyReaction: action,
             registerOnAccountSwitch: action,
+
             registerResidenceChangeReaction: action,
             setDBotEngineStores: action,
             onClickOutsideBlockly: action,
@@ -33,22 +34,13 @@ export default class AppStore {
         this.dbot_store = null;
         this.api_helpers_store = null;
         this.timer = null;
-        this.workspace_init_promise = null;
     }
 
     onMount = async () => {
-        // The workspace can be requested by more than one mount path. Keep a
-        // single initialization promise so two concurrent DBot.initWorkspace()
-        // calls can never race and leave Blockly in a blank state.
-        if (window.Blockly?.derivWorkspace) return;
-        if (this.workspace_init_promise) return this.workspace_init_promise;
-        if (!this.dbot_store) return;
+        const { blockly_store, run_panel } = this.root_store;
+        const { ui } = this.core;
 
-        this.workspace_init_promise = (async () => {
-            const { blockly_store, run_panel } = this.root_store;
-            const { ui } = this.core;
-
-            let timer_counter = 1;
+        let timer_counter = 1;
 
         this.timer = setInterval(() => {
             if (window.sendRequestsStatistic) {
@@ -62,6 +54,8 @@ export default class AppStore {
             }
         }, 10000);
 
+        if (!this.dbot_store) return;
+
         blockly_store.setLoading(true);
         await DBot.initWorkspace('/', this.dbot_store, this.api_helpers_store, ui.is_mobile, false);
 
@@ -70,17 +64,12 @@ export default class AppStore {
 
         this.registerCurrencyReaction.call(this);
         this.registerOnAccountSwitch.call(this);
+
         this.registerResidenceChangeReaction.call(this);
 
         window.addEventListener('click', this.onClickOutsideBlockly);
 
-            blockly_store.getCachedActiveTab();
-        })().catch(error => {
-            this.workspace_init_promise = null;
-            throw error;
-        });
-
-        return this.workspace_init_promise;
+        blockly_store.getCachedActiveTab();
     };
 
     onUnmount = () => {
@@ -99,13 +88,17 @@ export default class AppStore {
         if (typeof this.disposeSwitchAccountListener === 'function') {
             this.disposeSwitchAccountListener();
         }
+
         if (typeof this.disposeResidenceChangeReaction === 'function') {
             this.disposeResidenceChangeReaction();
         }
 
         window.removeEventListener('click', this.onClickOutsideBlockly);
 
+        // Ensure account switch is re-enabled.
+        // TODO: fix
         const { ui } = this.core;
+
         ui.setAccountSwitcherDisabledMessage();
         ui.setPromptHandler(false);
 
@@ -114,6 +107,7 @@ export default class AppStore {
     };
 
     registerCurrencyReaction = () => {
+        // Syncs all trade options blocks' currency with the client's active currency.
         this.disposeCurrencyReaction = reaction(
             () => this.core.client.currency,
             () => {
@@ -174,6 +168,7 @@ export default class AppStore {
 
     registerResidenceChangeReaction = () => {
         // Country code no longer available from removed get_settings API
+        // Previously set up residence change reaction here
     };
 
     setDBotEngineStores = () => {
@@ -216,7 +211,7 @@ export default class AppStore {
             );
 
             if (is_click_outside_blockly) {
-                window.Blockly?.hideChaff(false);
+                window.Blockly?.hideChaff(/* allowToolbox */ false);
             }
         }
     };
