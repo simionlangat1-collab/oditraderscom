@@ -49,6 +49,11 @@ const AppContent = observer(() => {
     const workspaceInitializationStarted = React.useRef(false);
     const { connectionStatus } = useApiBase();
 
+    // AppContent owns the Blockly lifecycle. BotBuilder is a visual consumer only.
+    React.useEffect(() => () => {
+        if (workspaceInitializationStarted.current) app.onUnmount();
+    }, [app]);
+
     // Initialize dev mode keyboard shortcuts
     useDevMode();
 
