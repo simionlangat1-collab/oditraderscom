@@ -50,6 +50,11 @@ const BotBuilder = observer(() => {
         return () => onUnmount();
     }, [onMount, onUnmount]);
 
+    React.useEffect(() => {
+        onMount();
+        return () => onUnmount();
+    }, [onMount, onUnmount]);
+
     // TODO: fix
     // const isMounted = useIsMounted();
     // const { data: remote_config_data } = useRemoteConfig(isMounted());
