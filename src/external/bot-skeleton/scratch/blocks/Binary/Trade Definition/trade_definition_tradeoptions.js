@@ -498,6 +498,9 @@ window.Blockly.Blocks.trade_definition_tradeoptions = {
             });
     },
     updatePredictionInput(should_use_default_value) {
+        // Render the numeric input immediately; API data may arrive later or be unavailable.
+        this.createPredictionInput([1]);
+
         const { contracts_for } = ApiHelpers?.instance ?? {};
         if (!contracts_for) return;
 
