@@ -11,6 +11,7 @@ export default class AppStore {
     dbot_store: RootStore | null;
     api_helpers_store: TApiHelpersStore | null;
     timer: ReturnType<typeof setInterval> | null;
+    workspace_init_promise: Promise<void> | null;
     disposeReloadOnLanguageChangeReaction: unknown;
     disposeCurrencyReaction: unknown;
     disposeSwitchAccountListener: unknown;
@@ -34,42 +35,55 @@ export default class AppStore {
         this.dbot_store = null;
         this.api_helpers_store = null;
         this.timer = null;
+        this.workspace_init_promise = null;
     }
 
     onMount = async () => {
+        if (window.Blockly?.derivWorkspace) return;
+        if (this.workspace_init_promise) return this.workspace_init_promise;
+        if (!this.dbot_store) return;
+
         const { blockly_store, run_panel } = this.root_store;
         const { ui } = this.core;
 
-        let timer_counter = 1;
+        this.workspace_init_promise = (async () => {
+            let timer_counter = 1;
 
-        this.timer = setInterval(() => {
-            if (window.sendRequestsStatistic) {
-                window.sendRequestsStatistic(false);
-                performance.clearMeasures();
-                if (timer_counter === 6 || run_panel?.is_running) {
-                    if (this.timer) clearInterval(this.timer);
-                } else {
-                    timer_counter++;
+            this.timer = setInterval(() => {
+                if (window.sendRequestsStatistic) {
+                    window.sendRequestsStatistic(false);
+                    performance.clearMeasures();
+                    if (timer_counter === 6 || run_panel?.is_running) {
+                        if (this.timer) clearInterval(this.timer);
+                    } else {
+                        timer_counter++;
+                    }
                 }
+            }, 10000);
+
+            blockly_store.setLoading(true);
+            await DBot.initWorkspace('/', this.dbot_store, this.api_helpers_store, ui.is_mobile, false);
+
+            if (!window.Blockly?.derivWorkspace) {
+                throw new Error('Blockly workspace was not mounted into #scratch_div.');
             }
-        }, 10000);
 
-        if (!this.dbot_store) return;
+            blockly_store.setContainerSize();
+            blockly_store.setLoading(false);
 
-        blockly_store.setLoading(true);
-        await DBot.initWorkspace('/', this.dbot_store, this.api_helpers_store, ui.is_mobile, false);
+            this.registerCurrencyReaction.call(this);
+            this.registerOnAccountSwitch.call(this);
+            this.registerResidenceChangeReaction.call(this);
 
-        blockly_store.setContainerSize();
-        blockly_store.setLoading(false);
+            window.addEventListener('click', this.onClickOutsideBlockly);
+            blockly_store.getCachedActiveTab();
+        })().catch(error => {
+            blockly_store.setLoading(false);
+            this.workspace_init_promise = null;
+            throw error;
+        });
 
-        this.registerCurrencyReaction.call(this);
-        this.registerOnAccountSwitch.call(this);
-
-        this.registerResidenceChangeReaction.call(this);
-
-        window.addEventListener('click', this.onClickOutsideBlockly);
-
-        blockly_store.getCachedActiveTab();
+        return this.workspace_init_promise;
     };
 
     onUnmount = () => {
