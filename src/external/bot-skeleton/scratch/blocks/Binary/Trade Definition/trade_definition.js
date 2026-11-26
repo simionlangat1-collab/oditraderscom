@@ -83,7 +83,7 @@ window.Blockly.Blocks.trade_definition = {
                 },
                 {
                     type: 'field_label',
-                    text: localize('Target Profit ('),
+                    text: localize('Target Profit'),
                 },
                 {
                     type: 'field_number',
@@ -106,7 +106,7 @@ window.Blockly.Blocks.trade_definition = {
                 },
                 {
                     type: 'field_label',
-                    text: localize('Stop Loss ('),
+                    text: localize('Stop Loss'),
                 },
                 {
                     type: 'field_number',
@@ -129,7 +129,7 @@ window.Blockly.Blocks.trade_definition = {
                 },
                 {
                     type: 'field_label',
-                    text: localize('Martingale ('),
+                    text: localize('Martingale'),
                 },
                 {
                     type: 'field_number',
