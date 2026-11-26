@@ -191,12 +191,14 @@ window.Blockly.Blocks.trade_definition_tradeoptions = {
             }
         }
     },
-    createPredictionInput(prediction_range) {
+    createPredictionInput(prediction_range = [1]) {
         runIrreversibleEvents(() => {
-            if (prediction_range.length === 0) {
-                this.removeInput('PREDICTION_LABEL', true);
-                this.removeInput('PREDICTION', true);
-            } else if (!this.getInput('PREDICTION')) {
+            // Keep Prediction visible in Trade Options even when the selected
+            // contract does not provide a prediction range from the API.
+            const available_range =
+                Array.isArray(prediction_range) && prediction_range.length > 0 ? prediction_range : [1];
+
+            if (!this.getInput('PREDICTION')) {
                 this.appendDummyInput('PREDICTION_LABEL').appendField(localize('Prediction:'));
 
                 const prediction_input = this.appendValueInput('PREDICTION');
@@ -204,7 +206,7 @@ window.Blockly.Blocks.trade_definition_tradeoptions = {
 
                 shadow_block.setInputsInline(true);
                 shadow_block.setShadow(true);
-                shadow_block.setFieldValue(prediction_range[0], 'NUM');
+                shadow_block.setFieldValue(available_range[0], 'NUM');
                 shadow_block.outputConnection.connect(prediction_input.connection);
                 shadow_block.initSvg();
                 shadow_block.renderEfficiently();
@@ -500,17 +502,19 @@ window.Blockly.Blocks.trade_definition_tradeoptions = {
         if (!contracts_for) return;
 
         contracts_for.getPredictionRange(this.selected_symbol, this.selected_trade_type).then(prediction_range => {
-            this.createPredictionInput(prediction_range);
+            const available_range =
+                Array.isArray(prediction_range) && prediction_range.length > 0 ? prediction_range : [1];
+            this.createPredictionInput(available_range);
 
-            if (prediction_range.length > 0) {
+            if (should_use_default_value) {
                 const prediction_input = this.getInput('PREDICTION');
-                const { connection } = prediction_input;
+                const { connection } = prediction_input ?? {};
 
-                if (should_use_default_value && connection) {
+                if (connection) {
                     const target_block = connection.targetBlock();
 
                     if (target_block && target_block.isShadow()) {
-                        const initial_prediction = Math.max(1, prediction_range[0]);
+                        const initial_prediction = Math.max(1, available_range[0]);
 
                         runIrreversibleEvents(() => {
                             target_block.setFieldValue(initial_prediction, 'NUM');
