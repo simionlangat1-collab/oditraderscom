@@ -176,78 +176,53 @@ const ManualTrader = () => {
 
         const startStream = async () => {
             try {
-                // Load the initial 1000-tick history separately from the live
-                // subscription. This keeps the live stream independent of the
-                // history response and matches the stable Manual Trader flow.
-                const historyResponse: any = await api.send({
+                // One Deriv subscription supplies both initial history and live ticks.
+                const response: any = await api.send({
                     ticks_history: symbol,
                     end: 'latest',
                     count: TICK_WINDOW,
                     style: 'ticks',
-                });
-
-                if (historyResponse?.error) {
-                    throw new Error(historyResponse.error.message || 'Unable to load market tick history.');
-                }
-                if (!active) return;
-
-                const historyData = historyResponse?.data ?? historyResponse;
-                const history = historyData?.history;
-                const prices: (number | string)[] = history?.prices || [];
-                const times: number[] = history?.times || [];
-                const historicalTicks = prices
-                    .map((price, index) => ({
-                        quote: Number(price),
-                        epoch: Number(times[index] || 0),
-                        digit: getLastDigit(price, precision),
-                    }))
-                    .filter(tick => Number.isFinite(tick.quote) && Number.isFinite(tick.epoch));
-
-                const latestHistoricalTick = historicalTicks[historicalTicks.length - 1];
-                if (
-                    !latestDigitTickRef.current ||
-                    (latestHistoricalTick && latestHistoricalTick.epoch >= latestDigitTickRef.current.epoch)
-                ) {
-                    latestDigitTickRef.current = latestHistoricalTick || null;
-                }
-
-                setDigitTicks(previous =>
-                    [...historicalTicks, ...previous]
-                        .sort((a, b) => a.epoch - b.epoch)
-                        .slice(-TICK_WINDOW)
-                );
-
-                // Dedicated live subscription. Do not treat the history
-                // response as proof that live ticks are flowing.
-                const tickResponse: any = await api.send({
-                    ticks: symbol,
                     subscribe: 1,
                 });
 
-                if (tickResponse?.error) {
-                    throw new Error(tickResponse.error.message || 'Unable to subscribe to live market ticks.');
+                const responseData = response?.data ?? response;
+                if (responseData?.error || response?.error) {
+                    const apiError = responseData?.error || response.error;
+                    throw new Error(apiError.message || 'Unable to subscribe to market ticks.');
                 }
+
+                subscriptionId = responseData?.subscription?.id || response?.subscription?.id || '';
                 if (!active) {
-                    const id = tickResponse?.subscription?.id;
-                    if (id) void api.send({ forget: id });
+                    if (subscriptionId) void api.send({ forget: subscriptionId });
                     return;
                 }
-
-                const tickResponseData = tickResponse?.data ?? tickResponse;
-                subscriptionId =
-                    tickResponseData?.subscription?.id || tickResponse?.subscription?.id || '';
-
                 if (!subscriptionId) {
-                    throw new Error('Live tick subscription was not created.');
+                    throw new Error('Deriv did not create the live tick subscription.');
                 }
 
-                // Connected is set only by the onMessage handler above,
-                // after an actual live tick arrives.
+                const history = responseData?.history;
+                const prices: (number | string)[] = history?.prices || [];
+                const times: number[] = history?.times || [];
+                const historicalTicks = prices.map((price, index) => ({
+                    quote: Number(price),
+                    epoch: Number(times[index] || 0),
+                    digit: getLastDigit(price, precision),
+                })).filter(tick => Number.isFinite(tick.quote) && Number.isFinite(tick.epoch));
+
+                if (historicalTicks.length) {
+                    const latestHistoricalTick = historicalTicks[historicalTicks.length - 1];
+                    if (!latestDigitTickRef.current || latestHistoricalTick.epoch >= latestDigitTickRef.current.epoch) {
+                        latestDigitTickRef.current = latestHistoricalTick;
+                    }
+                    setDigitTicks(previous => [...historicalTicks, ...previous]
+                        .sort((a, b) => a.epoch - b.epoch)
+                        .slice(-TICK_WINDOW));
+                }
+
+                // Wait for an actual tick message before showing Connected.
             } catch (requestError) {
                 if (!active) return;
-                setTickError(
-                    requestError instanceof Error ? requestError.message : 'Unable to stream market ticks.'
-                );
+                setTickError(requestError instanceof Error ? requestError.message : 'Unable to stream market ticks.');
                 setTickConnection('disconnected');
             }
         };
