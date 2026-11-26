@@ -211,6 +211,20 @@ window.Blockly.Blocks.trade_definition_tradeoptions = {
                 shadow_block.initSvg();
                 shadow_block.renderEfficiently();
             }
+
+            // Keep Recovery Digit directly after Prediction in the same Trade Options row.
+            if (!this.getInput('RECOVERY_DIGIT')) {
+                this.appendDummyInput('RECOVERY_DIGIT_LABEL').appendField(localize('Recovery Digit:'));
+
+                const recovery_digit_input = this.appendValueInput('RECOVERY_DIGIT');
+                const recovery_digit_shadow = this.workspace.newBlock('math_number');
+                recovery_digit_shadow.setInputsInline(true);
+                recovery_digit_shadow.setShadow(true);
+                recovery_digit_shadow.setFieldValue(0, 'NUM');
+                recovery_digit_shadow.outputConnection.connect(recovery_digit_input.connection);
+                recovery_digit_shadow.initSvg();
+                recovery_digit_shadow.renderEfficiently();
+            }
         });
     },
     createBarrierInputs(barriers) {
@@ -552,12 +566,13 @@ window.Blockly.Blocks.trade_definition_tradeoptions = {
         const has_first_barrier = xmlElement.getAttribute('has_first_barrier') === 'true';
         const has_second_barrier = xmlElement.getAttribute('has_second_barrier') === 'true';
         const has_prediction = xmlElement.getAttribute('has_prediction') === 'true';
+        const has_recovery_digit = xmlElement.getAttribute('has_recovery_digit') === 'true';
 
         if (has_first_barrier && has_second_barrier) {
             this.createBarrierInputs({ values: [1, -1] }); // These values are overwritten with XML values.
         } else if (has_first_barrier) {
             this.createBarrierInputs({ values: [1] });
-        } else if (has_prediction) {
+        } else if (has_prediction || has_recovery_digit) {
             this.createPredictionInput([1]);
         }
     },
@@ -567,6 +582,7 @@ window.Blockly.Blocks.trade_definition_tradeoptions = {
         container.setAttribute('has_first_barrier', !!this.getInput('BARRIEROFFSET'));
         container.setAttribute('has_second_barrier', !!this.getInput('SECONDBARRIEROFFSET'));
         container.setAttribute('has_prediction', !!this.getInput('PREDICTION'));
+        container.setAttribute('has_recovery_digit', !!this.getInput('RECOVERY_DIGIT'));
 
         return container;
     },
