@@ -22,8 +22,67 @@ export default Engine =>
             super();
             this.sessionRuns = 0;
             this.sessionProfit = 0;
+            this.riskManagement = { targetProfit: 0, stopLoss: 0, martingale: 0 };
+            this.riskManagementState = {
+                initialStake: null,
+                multiplier: 1,
+                recoveryActive: false,
+                recoveryDigit: null,
+                stopped: false,
+            };
 
             globalObserver.register('statistics.clear', this.clearStatistics.bind(this));
+        }
+
+        configureRiskManagement(options = {}) {
+            const asPositiveNumber = value => {
+                const number = Number(value);
+                return Number.isFinite(number) && number > 0 ? number : 0;
+            };
+
+            this.riskManagement = {
+                targetProfit: asPositiveNumber(options.targetProfit),
+                stopLoss: asPositiveNumber(options.stopLoss),
+                martingale: asPositiveNumber(options.martingale),
+            };
+            this.sessionRuns = 0;
+            this.sessionProfit = 0;
+            this.riskManagementState = {
+                initialStake: null,
+                multiplier: 1,
+                recoveryActive: false,
+                recoveryDigit: null,
+                stopped: false,
+            };
+        }
+
+        isRiskManagementStopped() {
+            return Boolean(this.riskManagementState?.stopped);
+        }
+
+        applyRiskManagement(tradeOptions) {
+            const state = this.riskManagementState;
+            const amount = Number(tradeOptions.amount);
+
+            if (!Number.isFinite(amount) || amount <= 0) return tradeOptions;
+            if (state.initialStake === null) state.initialStake = amount;
+
+            const recoveryDigit = Number(tradeOptions.recoveryDigit);
+            state.recoveryDigit =
+                Number.isInteger(recoveryDigit) && recoveryDigit >= 0 && recoveryDigit <= 9
+                    ? recoveryDigit
+                    : null;
+
+            const adjustedOptions = {
+                ...tradeOptions,
+                amount: getRoundedNumber(state.initialStake * state.multiplier, tradeOptions.currency),
+            };
+
+            if (state.recoveryActive && state.recoveryDigit !== null) {
+                adjustedOptions.prediction = state.recoveryDigit;
+            }
+
+            return adjustedOptions;
         }
 
         clearStatistics() {
@@ -48,6 +107,32 @@ export default Engine =>
             accountStat.totalLosses += !win ? 1 : 0;
 
             this.sessionProfit = getRoundedNumber(Number(this.sessionProfit) + Number(profit), currency);
+
+            const risk_state = this.riskManagementState;
+            if (risk_state) {
+                if (win) {
+                    risk_state.multiplier = 1;
+                    risk_state.recoveryActive = false;
+                } else {
+                    if (this.riskManagement.martingale > 1) {
+                        risk_state.multiplier *= this.riskManagement.martingale;
+                    }
+                    if (risk_state.recoveryDigit !== null) {
+                        risk_state.recoveryActive = true;
+                    }
+                }
+
+                const reached_target =
+                    this.riskManagement.targetProfit > 0 &&
+                    this.sessionProfit >= this.riskManagement.targetProfit;
+                const reached_stop_loss =
+                    this.riskManagement.stopLoss > 0 &&
+                    this.sessionProfit <= -this.riskManagement.stopLoss;
+
+                if (reached_target || reached_stop_loss) {
+                    risk_state.stopped = true;
+                }
+            }
 
             accountStat.totalProfit = getRoundedNumber(Number(accountStat.totalProfit) + Number(profit), currency);
 

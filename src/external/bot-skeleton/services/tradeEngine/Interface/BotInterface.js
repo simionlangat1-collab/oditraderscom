@@ -6,6 +6,7 @@ const getBotInterface = tradeEngine => {
 
     return {
         init: (...args) => tradeEngine.init(...args),
+        setRiskManagement: options => tradeEngine.configureRiskManagement(options),
         start: (...args) => tradeEngine.start(...args),
         stop: (...args) => tradeEngine.stop(...args),
         purchase: contract_type => tradeEngine.purchase(contract_type),

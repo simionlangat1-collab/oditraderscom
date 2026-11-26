@@ -93,13 +93,16 @@ export default class TradeEngine extends Balance(Purchase(Sell(OpenContract(Prop
             throw createError('NotInitialized', getLocalizedErrorMessage('NotInitialized'));
         }
 
+        if (this.isRiskManagementStopped()) return;
+
         globalObserver.emit('bot.running');
 
         const validated_trade_options = this.validateTradeOptions(tradeOptions);
+        const managed_trade_options = this.applyRiskManagement(validated_trade_options);
 
-        this.tradeOptions = { ...validated_trade_options, symbol: this.options.symbol };
+        this.tradeOptions = { ...managed_trade_options, symbol: this.options.symbol };
         this.store.dispatch(start());
-        this.checkLimits(validated_trade_options);
+        this.checkLimits(managed_trade_options);
 
         this.makeDirectPurchaseDecision();
     }

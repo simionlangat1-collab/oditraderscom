@@ -684,6 +684,14 @@ window.Blockly.JavaScript.javascriptGenerator.forBlock.trade_definition_tradeopt
             ) || '-1';
     }
 
+    const recovery_digit_value = block.getInput('RECOVERY_DIGIT')
+        ? window.Blockly.JavaScript.javascriptGenerator.valueToCode(
+              block,
+              'RECOVERY_DIGIT',
+              window.Blockly.JavaScript.javascriptGenerator.ORDER_ATOMIC
+          ) || 'undefined'
+        : 'undefined';
+
     if (block.getInput('BARRIEROFFSET')) {
         const barrier_offset_type = block.getFieldValue('BARRIEROFFSETTYPE_LIST');
         const value =
@@ -714,6 +722,7 @@ window.Blockly.JavaScript.javascriptGenerator.forBlock.trade_definition_tradeopt
             currency           : '${currency}',
             amount             : ${stake_amount},
             prediction         : ${prediction_value || 'undefined'},
+            recoveryDigit      : ${recovery_digit_value},
             barrierOffset      : ${barrier_offset_value || 'undefined'},
             secondBarrierOffset: ${second_barrier_offset_value || 'undefined'},
             basis              : '${block.type === 'trade_definition_tradeoptions' ? 'stake' : 'payout'}',

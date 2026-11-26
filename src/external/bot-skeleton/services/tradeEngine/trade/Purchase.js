@@ -11,6 +11,11 @@ let purchase_reference;
 export default Engine =>
     class Purchase extends Engine {
         purchase(contract_type) {
+            // Recheck limits at the purchase boundary to block any further buy requests.
+            if (this.isRiskManagementStopped()) {
+                return Promise.resolve();
+            }
+
             // Prevent calling purchase twice
             if (this.store.getState().scope !== BEFORE_PURCHASE) {
                 return Promise.resolve();

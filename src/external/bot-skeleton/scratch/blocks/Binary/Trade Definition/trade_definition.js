@@ -214,6 +214,21 @@ window.Blockly.JavaScript.javascriptGenerator.forBlock.trade_definition = block 
 
     const initialization = window.Blockly.JavaScript.javascriptGenerator.statementToCode(block, 'INITIALIZATION');
     const trade_options_statement = window.Blockly.JavaScript.javascriptGenerator.statementToCode(block, 'SUBMARKET');
+    const risk_parameters = block.getBlocksInStatement('RISK_PARAMETERS');
+    const getRiskValue = type => {
+        const risk_block = risk_parameters.find(item => item.type === type);
+        const field_name =
+            type === 'trade_definition_targetprofit'
+                ? 'ICONIC_TARGET_PROFIT'
+                : type === 'trade_definition_stoploss'
+                  ? 'ICONIC_STOP_LOSS'
+                  : 'ICONIC_MARTINGALE';
+        const value = Number(risk_block?.getFieldValue(field_name));
+        return Number.isFinite(value) && value > 0 ? value : 0;
+    };
+    const target_profit = getRiskValue('trade_definition_targetprofit');
+    const stop_loss = getRiskValue('trade_definition_stoploss');
+    const martingale = getRiskValue('trade_definition_martingale');
 
     const code = `  
     BinaryBotPrivateInit = function BinaryBotPrivateInit() {
@@ -223,6 +238,11 @@ window.Blockly.JavaScript.javascriptGenerator.forBlock.trade_definition = block 
           candleInterval      : '${candle_interval || 'FALSE'}',
           shouldRestartOnError: ${should_restart_on_error},
           timeMachineEnabled  : ${should_restart_on_buy_sell},
+        });
+        Bot.setRiskManagement({
+            targetProfit: ${target_profit},
+            stopLoss: ${stop_loss},
+            martingale: ${martingale},
         });
         ${initialization.trim()}
     };
