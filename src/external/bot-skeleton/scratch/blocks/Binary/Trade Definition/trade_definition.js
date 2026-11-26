@@ -19,12 +19,13 @@ window.Blockly.Blocks.trade_definition = {
     definition() {
         return {
             message0: '%1 %2 %3',
-            message1: '%1 %2 %3',
-            message2: '%1',
+            message1: '%1',
+            message2: '%1 %2 %3',
             message3: '%1',
-            message4: '%1 %2 %3',
-            message5: '%1',
+            message4: '%1',
+            message5: '%1 %2 %3',
             message6: '%1',
+            message7: '%1',
             args0: [
                 {
                     type: 'field_image',
@@ -44,6 +45,12 @@ window.Blockly.Blocks.trade_definition = {
             ],
             args1: [
                 {
+                    type: 'input_statement',
+                    name: 'TRADE_OPTIONS',
+                },
+            ],
+            args2: [
+                {
                     type: 'field_image',
                     src: ' ',
                     width: 4,
@@ -58,21 +65,21 @@ window.Blockly.Blocks.trade_definition = {
                     type: 'input_dummy',
                 },
             ],
-            args2: [
+            args3: [
                 {
                     type: 'input_statement',
                     name: 'INITIALIZATION',
                     check: null,
                 },
             ],
-            args3: [
+            args4: [
                 {
                     type: 'input_statement',
                     name: 'RISK_PARAMETERS',
                     check: null,
                 },
             ],
-            args4: [
+            args5: [
                 {
                     type: 'field_image',
                     src: ' ', // this is here to add extra padding
@@ -88,13 +95,13 @@ window.Blockly.Blocks.trade_definition = {
                     type: 'input_dummy',
                 },
             ],
-            args5: [
+            args6: [
                 {
                     type: 'input_statement',
                     name: 'SUBMARKET',
                 },
             ],
-            args6: [
+            args7: [
                 {
                     type: 'field_image',
                     src: ' ', // this is here to add extra padding
