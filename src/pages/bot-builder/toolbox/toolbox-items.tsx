@@ -115,6 +115,11 @@ export const ToolboxItems = () =>
                             <Field name='NUM'>1</Field>
                         </Shadow>
                     </Value>
+                    <Value name='PREDICTION'>
+                        <Shadow type='math_number'>
+                            <Field name='NUM'>1</Field>
+                        </Shadow>
+                    </Value>
                     <Field name='AMOUNT_LIMITS' />
                 </Block>
                 <Block type='trade_definition_multiplier'>
