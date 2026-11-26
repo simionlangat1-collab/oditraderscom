@@ -43,6 +43,10 @@ const AppContent = observer(() => {
     const { recovered_transactions, recoverPendingContracts } = transactions;
     const is_subscribed_to_msg_listener = React.useRef(false);
     const msg_listener = React.useRef(null);
+    // AppContent can initialize more than once as the socket/auth state settles.
+    // Blockly must be injected exactly once; concurrent initWorkspace calls can
+    // replace the workspace instance and leave the Bot Builder surface empty.
+    const workspaceInitializationStarted = React.useRef(false);
     const { connectionStatus } = useApiBase();
 
     // Initialize dev mode keyboard shortcuts
@@ -133,8 +137,11 @@ const AppContent = observer(() => {
 
         // BotBuilder is already mounted before API initialization completes.
         // Initialize Blockly only after its stores exist and #scratch_div is in the DOM.
-        if (document.getElementById('scratch_div')) {
+        if (document.getElementById('scratch_div') && !workspaceInitializationStarted.current) {
+            workspaceInitializationStarted.current = true;
             app.onMount().catch(error => {
+                // Permit a clean retry after a genuine initialization failure.
+                workspaceInitializationStarted.current = false;
                 console.error('Failed to initialize Bot Builder workspace:', error);
             });
         }
