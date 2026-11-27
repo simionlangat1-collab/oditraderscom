@@ -224,7 +224,11 @@ const Tabs = ({
                 {React.Children.map(children, (child, index) => {
                     if (!child) return null;
                     if (index !== active_tab_index) {
-                        return undefined;
+                        // Keep explicitly opted-in tabs mounted while hidden.
+                        // Manual Trader owns a live market-data socket that must
+                        // survive navigation to Bot Builder and other tabs.
+                        if (!child.props.keep_mounted) return undefined;
+                        return <div style={{ display: 'none' }}>{child.props.children}</div>;
                     }
                     return child.props.children;
                 })}
