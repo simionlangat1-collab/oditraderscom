@@ -219,8 +219,17 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
             const lossLimitReached = appliedSettings.stopLoss > 0 && sessionProfitRef.current <= -appliedSettings.stopLoss;
             if (profitLimitReached || lossLimitReached) {
                 targetStopTriggeredRef.current = true;
+                tradeGenerationRef.current += 1;
                 tradingRef.current = false;
                 setIsTrading(false);
+                if (profitLimitReached) {
+                    targetProfitPopupShownRef.current = true;
+                    setTargetProfitAchieved(sessionProfitRef.current);
+                    setStopLossReachedAmount(null);
+                } else {
+                    setStopLossReachedAmount(sessionProfitRef.current);
+                    setTargetProfitAchieved(null);
+                }
                 setExecutionMessage(profitLimitReached
                     ? 'Target Profit reached. Trading permanently stopped for this session.'
                     : 'Stop Loss reached. Trading permanently stopped for this session.');
@@ -292,6 +301,14 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                     tradeGenerationRef.current += 1;
                     tradingRef.current = false;
                     setIsTrading(false);
+                    if (profitLimitReachedBeforeBuy) {
+                        targetProfitPopupShownRef.current = true;
+                        setTargetProfitAchieved(sessionProfitRef.current);
+                        setStopLossReachedAmount(null);
+                    } else if (lossLimitReachedBeforeBuy) {
+                        setStopLossReachedAmount(sessionProfitRef.current);
+                        setTargetProfitAchieved(null);
+                    }
                     setExecutionMessage(profitLimitReachedBeforeBuy
                         ? 'Target Profit reached. No further purchases will be sent.'
                         : 'Stop Loss reached. No further purchases will be sent.');
@@ -562,7 +579,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
 
             <div className='tc-performance-grid'>
                 <article className='tc-panel tc-stat-panel'><small>{isDemoAccountState === null ? 'BALANCE' : isDemoAccountState ? 'D. Bal =' : 'R. Bal ='}</small><strong>{accountBalance === null || !Number.isFinite(accountBalance) ? '—' : accountBalance.toFixed(2)} {accountCurrency}</strong></article>
-                <button type='button' className='tc-panel tc-stat-panel tc-stat-panel--start tc-start-button' onClick={isTrading ? () => { tradingRef.current = false; setIsTrading(false); setExecutionMessage('Trading stopped. Existing contracts remain tracked.'); } : startTrading}>{isTrading ? 'STOP TRADES' : 'START TRADES'}<small>{isTrading ? 'RUNNING · 1s CYCLE' : 'DEMO ONLY'}</small></button>
+                <button type='button' className='tc-panel tc-stat-panel tc-stat-panel--start tc-start-button' onClick={isTrading ? () => { tradingRef.current = false; targetStopTriggeredRef.current = true; tradeGenerationRef.current += 1; setIsTrading(false); setExecutionMessage('Trading stopped. Existing contracts remain tracked.'); } : startTrading}>{isTrading && !targetStopTriggeredRef.current ? 'STOP TRADES' : 'START TRADES'}<small>{isTrading && !targetStopTriggeredRef.current ? 'RUNNING · 1s CYCLE' : 'DEMO ONLY'}</small></button>
                 <article className='tc-panel tc-stat-panel tc-stat-panel--money'><small>PROFIT / LOSS</small><strong>{sessionProfit >= 0 ? '+' : ''}{sessionProfit.toFixed(2)} {accountCurrency}</strong></article>
             </div>
 
