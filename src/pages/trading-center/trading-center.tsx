@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { isDemoAccount } from '@/utils/account-helpers';
 import { api_base } from '@/external/bot-skeleton';
 import { CONNECTION_STATUS } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
@@ -54,8 +55,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const [tradeCount, setTradeCount] = useState(0);
     const [tradeHistory, setTradeHistory] = useState<TradeRecord[]>([]);
     const [latestTradeResult, setLatestTradeResult] = useState<{ profit: number; status: 'WON' | 'LOST' } | null>(null);
-    const [targetProfitAchieved, setTargetProfitAchieved] = useState<number | null>(null);
-    const [stopLossReachedAmount, setStopLossReachedAmount] = useState<number | null>(null);
+    const [limitNotification, setLimitNotification] = useState<{ type: 'profit' | 'loss'; amount: number } | null>(null);
     const [executionMessage, setExecutionMessage] = useState('Demo account required. Select EVEN or ODD to begin.');
     const contractMap = useRef(new Map<number, number>());
     const contractSubscriptionMap = useRef(new Map<number, string>());
@@ -135,8 +135,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 tradeGenerationRef.current += 1;
                 if (!targetProfitPopupShownRef.current) {
                     targetProfitPopupShownRef.current = true;
-                    setTargetProfitAchieved(sessionProfitRef.current);
-                    setStopLossReachedAmount(null);
+                    setLimitNotification({ type: 'profit', amount: sessionProfitRef.current });
                 }
                 tradingRef.current = false;
                 setIsTrading(false);
@@ -146,8 +145,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 tradeGenerationRef.current += 1;
                 tradingRef.current = false;
                 setIsTrading(false);
-                setStopLossReachedAmount(sessionProfitRef.current);
-                setTargetProfitAchieved(null);
+                setLimitNotification({ type: 'loss', amount: sessionProfitRef.current });
                 setExecutionMessage('Stop Loss reached. New trades stopped; open contracts remain monitored.');
             }
         });
@@ -170,22 +168,20 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         const targetReached = appliedSettings.targetProfit > 0 && sessionProfit >= appliedSettings.targetProfit;
         const stopLossReached = appliedSettings.stopLoss > 0 && sessionProfit <= -appliedSettings.stopLoss;
 
-        if (targetReached && targetProfitAchieved === null && stopLossReachedAmount === null) {
+        if (targetReached && limitNotification === null) {
             targetStopTriggeredRef.current = true;
             tradingRef.current = false;
             setIsTrading(false);
-            setTargetProfitAchieved(sessionProfit);
-            setStopLossReachedAmount(null);
+            setLimitNotification({ type: 'profit', amount: sessionProfit });
             setExecutionMessage('Target Profit reached. Trading stopped automatically.');
-        } else if (stopLossReached && targetProfitAchieved === null && stopLossReachedAmount === null) {
+        } else if (stopLossReached && limitNotification === null) {
             targetStopTriggeredRef.current = true;
             tradingRef.current = false;
             setIsTrading(false);
-            setStopLossReachedAmount(sessionProfit);
-            setTargetProfitAchieved(null);
+            setLimitNotification({ type: 'loss', amount: sessionProfit });
             setExecutionMessage('Stop Loss reached. Trading stopped automatically.');
         }
-    }, [sessionProfit, appliedSettings.targetProfit, appliedSettings.stopLoss, targetProfitAchieved, stopLossReachedAmount]);
+    }, [sessionProfit, appliedSettings.targetProfit, appliedSettings.stopLoss, limitNotification]);
 
     const startTrading = () => {
         if (!isDemoAccount(activeLoginid) || !authData?.is_virtual) {
@@ -219,8 +215,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         targetStopTriggeredRef.current = false;
         tradeGenerationRef.current += 1;
         buyRequestInFlightRef.current = false;
-        setTargetProfitAchieved(null);
-        setStopLossReachedAmount(null);
+        setLimitNotification(null);
         tradingRef.current = true;
         setIsTrading(true);
         setExecutionMessage('Demo trading active · one purchase cycle every second.');
@@ -249,8 +244,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 setIsTrading(false);
                 if (profitLimitReached) {
                     targetProfitPopupShownRef.current = true;
-                    setTargetProfitAchieved(sessionProfitRef.current);
-                    setStopLossReachedAmount(null);
+                    setLimitNotification({ type: 'profit', amount: sessionProfitRef.current });
                 } else {
                     setStopLossReachedAmount(sessionProfitRef.current);
                     setTargetProfitAchieved(null);
@@ -328,11 +322,9 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                     setIsTrading(false);
                     if (profitLimitReachedBeforeBuy) {
                         targetProfitPopupShownRef.current = true;
-                        setTargetProfitAchieved(sessionProfitRef.current);
-                        setStopLossReachedAmount(null);
+                        setLimitNotification({ type: 'profit', amount: sessionProfitRef.current });
                     } else if (lossLimitReachedBeforeBuy) {
-                        setStopLossReachedAmount(sessionProfitRef.current);
-                        setTargetProfitAchieved(null);
+                        setLimitNotification({ type: 'loss', amount: sessionProfitRef.current });
                     }
                     setExecutionMessage(profitLimitReachedBeforeBuy
                         ? 'Target Profit reached. No further purchases will be sent.'
@@ -604,7 +596,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
 
             <div className='tc-performance-grid'>
                 <article className='tc-panel tc-stat-panel'><small>{isDemoAccountState === null ? 'BALANCE' : isDemoAccountState ? 'D. Bal =' : 'R. Bal ='}</small><strong>{accountBalance === null || !Number.isFinite(accountBalance) ? '—' : accountBalance.toFixed(2)} {accountCurrency}</strong></article>
-                <button type='button' className='tc-panel tc-stat-panel tc-stat-panel--start tc-start-button' onClick={isTrading ? () => { tradingRef.current = false; targetStopTriggeredRef.current = true; tradeGenerationRef.current += 1; setIsTrading(false); setExecutionMessage('Trading stopped. Existing contracts remain tracked.'); } : startTrading}>{isTrading ? 'STOP TRADES' : 'START TRADES'}<small>{isTrading ? 'RUNNING · 1s CYCLE' : 'DEMO ONLY'}</small></button>
+                <button type='button' className='tc-panel tc-stat-panel tc-stat-panel--start tc-start-button' onClick={isTrading && limitNotification === null ? () => { tradingRef.current = false; targetStopTriggeredRef.current = true; tradeGenerationRef.current += 1; setIsTrading(false); setExecutionMessage('Trading stopped. Existing contracts remain tracked.'); } : startTrading}>{isTrading && limitNotification === null ? 'STOP TRADES' : 'START TRADES'}<small>{isTrading && limitNotification === null ? 'RUNNING · 1s CYCLE' : 'DEMO ONLY'}</small></button>
                 <article className='tc-panel tc-stat-panel tc-stat-panel--money'><small>PROFIT / LOSS</small><strong>{sessionProfit >= 0 ? '+' : ''}{sessionProfit.toFixed(2)} {accountCurrency}</strong></article>
             </div>
 
@@ -694,19 +686,18 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 </div>
             )}
 
-            {(targetProfitAchieved !== null || stopLossReachedAmount !== null) && (
+            {limitNotification !== null && createPortal(
                 <div
                     className='tc-iconic-backdrop'
                     role='presentation'
                     onMouseDown={event => {
                         if (event.target === event.currentTarget) {
-                            setTargetProfitAchieved(null);
-                            setStopLossReachedAmount(null);
+                            setLimitNotification(null);
                         }
                     }}
                 >
                     <section
-                        className={'tc-iconic-modal ' + (targetProfitAchieved !== null ? 'tc-iconic-modal--profit' : 'tc-iconic-modal--loss')}
+                        className={'tc-iconic-modal ' + (limitNotification.type === 'profit' ? 'tc-iconic-modal--profit' : 'tc-iconic-modal--loss')}
                         role='dialog'
                         aria-modal='true'
                         aria-labelledby='tc-iconic-title'
@@ -717,34 +708,33 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                             className='tc-iconic-close'
                             aria-label='Close notification'
                             onClick={() => {
-                                setTargetProfitAchieved(null);
-                                setStopLossReachedAmount(null);
+                                setLimitNotification(null);
                             }}
                         >×</button>
                         <div className='tc-iconic-brand' aria-hidden='true'>♛ ICONIC BOT</div>
-                        <div className='tc-iconic-trophy' aria-hidden='true'>{targetProfitAchieved !== null ? '🏆' : '🛑'}</div>
+                        <div className='tc-iconic-trophy' aria-hidden='true'>{limitNotification.type === 'profit' ? '🏆' : '🛑'}</div>
                         <div className='tc-iconic-titlebar'>
-                            <span aria-hidden='true'>{targetProfitAchieved !== null ? '✓' : '!'}</span>
+                            <span aria-hidden='true'>{limitNotification.type === 'profit' ? '✓' : '!'}</span>
                             <h2 id='tc-iconic-title'>
-                                {targetProfitAchieved !== null ? 'ICONIC TARGET PROFIT ACHIEVED' : 'STOP LOSS LIMIT REACHED'}
+                                {limitNotification.type === 'profit' ? 'ICONIC TARGET PROFIT ACHIEVED' : 'STOP LOSS LIMIT REACHED'}
                             </h2>
                         </div>
                         <div className='tc-iconic-amount'>
-                            <span>{targetProfitAchieved !== null ? 'SESSION PROFIT' : 'SESSION LOSS'}</span>
+                            <span>{limitNotification.type === 'profit' ? 'SESSION PROFIT' : 'SESSION LOSS'}</span>
                             <strong>
-                                {targetProfitAchieved !== null
-                                    ? '+ ' + targetProfitAchieved.toFixed(2) + ' ' + accountCurrency
-                                    : '- ' + Math.abs(stopLossReachedAmount ?? 0).toFixed(2) + ' ' + accountCurrency}
+                                {limitNotification.type === 'profit'
+                                    ? '+ ' + limitNotification.amount.toFixed(2) + ' ' + accountCurrency
+                                    : '- ' + Math.abs(limitNotification.amount).toFixed(2) + ' ' + accountCurrency}
                             </strong>
                             <small>
-                                {targetProfitAchieved !== null
+                                {limitNotification.type === 'profit'
                                     ? 'Target: ' + appliedSettings.targetProfit.toFixed(2) + ' ' + accountCurrency
                                     : 'Limit: -' + appliedSettings.stopLoss.toFixed(2) + ' ' + accountCurrency}
                             </small>
                         </div>
                         <p className='tc-iconic-message' id='tc-iconic-description'>
-                            <span aria-hidden='true'>{targetProfitAchieved !== null ? '✓' : '!'}</span>
-                            {targetProfitAchieved !== null
+                            <span aria-hidden='true'>{limitNotification.type === 'profit' ? '✓' : '!'}</span>
+                            {limitNotification.type === 'profit'
                                 ? 'Trading has been stopped automatically.'
                                 : 'Trading has been stopped automatically.'}
                         </p>
@@ -753,13 +743,12 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                             type='button'
                             className='tc-iconic-acknowledge'
                             onClick={() => {
-                                setTargetProfitAchieved(null);
-                                setStopLossReachedAmount(null);
+                                setLimitNotification(null);
                             }}
                         >OK</button>
                     </section>
                 </div>
-            )}
+            , document.body)}
         </section>
     );
 };
