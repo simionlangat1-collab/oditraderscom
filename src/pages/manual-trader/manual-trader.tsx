@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
-import { getSocketURL } from '@/components/shared';
+import { WS_SERVERS, isProduction } from '@/components/shared/utils/config';
 import { CONNECTION_STATUS, connectionStatus$ } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { manualTradeService } from './services/manual-trade-service';
 import { TradeControls } from './components/trade-controls';
@@ -214,7 +214,10 @@ const ManualTrader = () => {
             try {
                 // Completely separate raw WebSocket. Bot Builder/APIBase never receives
                 // or owns this socket, so its reconnects cannot replace this feed.
-                const wsUrl = await getSocketURL();
+                // Use the dedicated public market-data endpoint directly. Do not use
+                // getSocketURL(): that helper may return the authenticated OTP/API URL.
+                // Manual Trader must have its own market-data transport.
+                const wsUrl = isProduction() ? WS_SERVERS.PRODUCTION : WS_SERVERS.STAGING;
                 if (!active) return;
                 marketSocket = new WebSocket(wsUrl);
                 await new Promise<void>((resolve, reject) => {
