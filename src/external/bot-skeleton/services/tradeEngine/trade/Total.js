@@ -129,8 +129,16 @@ export default Engine =>
                     this.riskManagement.stopLoss > 0 &&
                     this.sessionProfit <= -this.riskManagement.stopLoss;
 
-                if (reached_target || reached_stop_loss) {
+                if (!risk_state.stopped && (reached_target || reached_stop_loss)) {
                     risk_state.stopped = true;
+                    globalObserver.emit('bot.risk_limit_reached', {
+                        limit: reached_target ? 'target_profit' : 'stop_loss',
+                        limitValue: reached_target
+                            ? this.riskManagement.targetProfit
+                            : this.riskManagement.stopLoss,
+                        sessionProfit: this.sessionProfit,
+                        currency,
+                    });
                 }
             }
 
