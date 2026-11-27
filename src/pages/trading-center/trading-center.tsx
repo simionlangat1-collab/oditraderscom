@@ -55,6 +55,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
     const [tradeHistory, setTradeHistory] = useState<TradeRecord[]>([]);
     const [latestTradeResult, setLatestTradeResult] = useState<{ profit: number; status: 'WON' | 'LOST' } | null>(null);
     const [targetProfitAchieved, setTargetProfitAchieved] = useState<number | null>(null);
+    const [stopLossReachedAmount, setStopLossReachedAmount] = useState<number | null>(null);
     const [executionMessage, setExecutionMessage] = useState('Demo account required. Select EVEN or ODD to begin.');
     const contractMap = useRef(new Map<number, number>());
     const contractSubscriptionMap = useRef(new Map<number, string>());
@@ -135,6 +136,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 if (!targetProfitPopupShownRef.current) {
                     targetProfitPopupShownRef.current = true;
                     setTargetProfitAchieved(sessionProfitRef.current);
+                    setStopLossReachedAmount(null);
                 }
                 tradingRef.current = false;
                 setIsTrading(false);
@@ -144,6 +146,8 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 tradeGenerationRef.current += 1;
                 tradingRef.current = false;
                 setIsTrading(false);
+                setStopLossReachedAmount(sessionProfitRef.current);
+                setTargetProfitAchieved(null);
                 setExecutionMessage('Stop Loss reached. New trades stopped; open contracts remain monitored.');
             }
         });
@@ -191,6 +195,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         tradeGenerationRef.current += 1;
         buyRequestInFlightRef.current = false;
         setTargetProfitAchieved(null);
+        setStopLossReachedAmount(null);
         tradingRef.current = true;
         setIsTrading(true);
         setExecutionMessage('Demo trading active · one purchase cycle every second.');
@@ -647,21 +652,69 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
                 </div>
             )}
 
-            {targetProfitAchieved !== null && (
-                <div className='tc-target-backdrop' role='presentation' onMouseDown={event => { if (event.target === event.currentTarget) setTargetProfitAchieved(null); }}>
-                    <section className='tc-target-modal' role='dialog' aria-modal='true' aria-labelledby='tc-target-title' aria-describedby='tc-target-description'>
-                        <button type='button' className='tc-target-close' aria-label='Close target profit notification' onClick={() => setTargetProfitAchieved(null)}>×</button>
-                        <div className='tc-target-confetti' aria-hidden='true'>✦　✧　✦　✧　✦</div>
-                        <div className='tc-target-trophy' aria-hidden='true'>🏆</div>
-                        <div className='tc-target-success'><span aria-hidden='true'>✓</span><h2 id='tc-target-title'>TARGET PROFIT <strong>ACHIEVED!</strong></h2></div>
-                        <div className='tc-target-amount'>
-                            <span>SESSION PROFIT</span>
-                            <strong>+{targetProfitAchieved.toFixed(2)} {accountCurrency}</strong>
-                            <small>Target: {appliedSettings.targetProfit.toFixed(2)} {accountCurrency}</small>
+            {(targetProfitAchieved !== null || stopLossReachedAmount !== null) && (
+                <div
+                    className='tc-iconic-backdrop'
+                    role='presentation'
+                    onMouseDown={event => {
+                        if (event.target === event.currentTarget) {
+                            setTargetProfitAchieved(null);
+                            setStopLossReachedAmount(null);
+                        }
+                    }}
+                >
+                    <section
+                        className={'tc-iconic-modal ' + (targetProfitAchieved !== null ? 'tc-iconic-modal--profit' : 'tc-iconic-modal--loss')}
+                        role='dialog'
+                        aria-modal='true'
+                        aria-labelledby='tc-iconic-title'
+                        aria-describedby='tc-iconic-description'
+                    >
+                        <button
+                            type='button'
+                            className='tc-iconic-close'
+                            aria-label='Close notification'
+                            onClick={() => {
+                                setTargetProfitAchieved(null);
+                                setStopLossReachedAmount(null);
+                            }}
+                        >×</button>
+                        <div className='tc-iconic-brand' aria-hidden='true'>♛ ICONIC BOT</div>
+                        <div className='tc-iconic-trophy' aria-hidden='true'>{targetProfitAchieved !== null ? '🏆' : '🛑'}</div>
+                        <div className='tc-iconic-titlebar'>
+                            <span aria-hidden='true'>{targetProfitAchieved !== null ? '✓' : '!'}</span>
+                            <h2 id='tc-iconic-title'>
+                                {targetProfitAchieved !== null ? 'ICONIC TARGET PROFIT ACHIEVED' : 'STOP LOSS LIMIT REACHED'}
+                            </h2>
                         </div>
-                        <p className='tc-target-message' id='tc-target-description'><span aria-hidden='true'>✓</span> New trades stopped automatically.</p>
-                        <p className='tc-target-submessage'>Any open contracts will continue to be monitored until settlement.</p>
-                        <button type='button' className='tc-target-acknowledge' onClick={() => setTargetProfitAchieved(null)}>👍 &nbsp; GREAT, GOT IT</button>
+                        <div className='tc-iconic-amount'>
+                            <span>{targetProfitAchieved !== null ? 'SESSION PROFIT' : 'SESSION LOSS'}</span>
+                            <strong>
+                                {targetProfitAchieved !== null
+                                    ? '+ ' + targetProfitAchieved.toFixed(2) + ' ' + accountCurrency
+                                    : '- ' + Math.abs(stopLossReachedAmount ?? 0).toFixed(2) + ' ' + accountCurrency}
+                            </strong>
+                            <small>
+                                {targetProfitAchieved !== null
+                                    ? 'Target: ' + appliedSettings.targetProfit.toFixed(2) + ' ' + accountCurrency
+                                    : 'Limit: -' + appliedSettings.stopLoss.toFixed(2) + ' ' + accountCurrency}
+                            </small>
+                        </div>
+                        <p className='tc-iconic-message' id='tc-iconic-description'>
+                            <span aria-hidden='true'>{targetProfitAchieved !== null ? '✓' : '!'}</span>
+                            {targetProfitAchieved !== null
+                                ? 'Trading has been stopped automatically.'
+                                : 'Trading has been stopped automatically.'}
+                        </p>
+                        <p className='tc-iconic-submessage'>Any open contracts will continue to be monitored until settlement.</p>
+                        <button
+                            type='button'
+                            className='tc-iconic-acknowledge'
+                            onClick={() => {
+                                setTargetProfitAchieved(null);
+                                setStopLossReachedAmount(null);
+                            }}
+                        >OK</button>
                     </section>
                 </div>
             )}
