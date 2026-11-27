@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getSocketURL } from '@/components/shared';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 import { CONNECTION_STATUS, connectionStatus$ } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { manualTradeService } from './services/manual-trade-service';
@@ -147,6 +146,7 @@ const ManualTrader = () => {
         let requestId = 0;
         let subscriptionId = '';
         let watchdog: number | null = null;
+        let reconnectTimer: number | null = null;
         const pending = new Map<number, { resolve: (value: any) => void; reject: (reason: Error) => void }>();
         latestDigitTickRef.current = null;
         lastLiveTickAtRef.current = Date.now();
@@ -199,7 +199,10 @@ const ManualTrader = () => {
 
         const connectMarketFeed = async () => {
             try {
-                const wsUrl = await getSocketURL();
+                // Market-data ticks do not require account authentication. Use Deriv's
+                // public market-data WebSocket so Bot Builder/API socket reconnects,
+                // account changes, and tab switching cannot take Manual Trader offline.
+                const wsUrl = 'wss://api.derivws.com/trading/v1/options/ws/public';
                 if (!active) return;
                 marketSocket = new WebSocket(wsUrl);
                 await new Promise<void>((resolve, reject) => {
@@ -215,7 +218,12 @@ const ManualTrader = () => {
                     if (!active) return;
                     setTickError('Manual Trader market-data connection closed. Reconnecting…');
                     setTickConnection('disconnected');
-                    setTickStreamRestartKey(previous => previous + 1);
+                    if (reconnectTimer === null) {
+                        reconnectTimer = window.setTimeout(() => {
+                            reconnectTimer = null;
+                            if (active) setTickStreamRestartKey(previous => previous + 1);
+                        }, 1000);
+                    }
                 });
 
                 const historyResponse = await sendRequest({
@@ -257,7 +265,7 @@ const ManualTrader = () => {
         void connectMarketFeed();
         watchdog = window.setInterval(() => {
             if (!active || !marketSocket || marketSocket.readyState !== WebSocket.OPEN) return;
-            if (lastLiveTickAtRef.current && Date.now() - lastLiveTickAtRef.current > 20000) {
+            if (lastLiveTickAtRef.current && Date.now() - lastLiveTickAtRef.current > 8000) {
                 lastLiveTickAtRef.current = Date.now();
                 setTickStreamRestartKey(previous => previous + 1);
             }
@@ -266,6 +274,7 @@ const ManualTrader = () => {
         return () => {
             active = false;
             if (watchdog !== null) window.clearInterval(watchdog);
+            if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
             pending.forEach(request => request.reject(new Error('Manual Trader stream restarted.')));
             pending.clear();
             if (marketSocket) {
