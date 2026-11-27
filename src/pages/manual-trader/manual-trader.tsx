@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 import { CONNECTION_STATUS, connectionStatus$ } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
-import { doUntilDone } from '@/external/bot-skeleton/services/tradeEngine/utils/helpers';
 import { manualTradeService } from './services/manual-trade-service';
 import { TradeControls } from './components/trade-controls';
 import { TradeHistory } from './components/trade-history';
