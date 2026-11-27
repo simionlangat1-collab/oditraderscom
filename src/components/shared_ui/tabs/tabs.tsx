@@ -223,13 +223,23 @@ const Tabs = ({
             >
                 {React.Children.map(children, (child, index) => {
                     if (!child) return null;
-                    if (index !== active_tab_index) {
-                        // Keep explicitly opted-in tabs mounted while hidden.
-                        // Manual Trader owns a live market-data socket that must
-                        // survive navigation to Bot Builder and other tabs.
-                        if (!child.props.keep_mounted) return undefined;
-                        return <div style={{ display: 'none' }}>{child.props.children}</div>;
+
+                    // Persistent tabs must keep the same React element type and
+                    // position whether active or hidden. Switching between a
+                    // direct child and a newly-created hidden wrapper remounts
+                    // the tab and tears down component-owned WebSockets.
+                    if (child.props.keep_mounted) {
+                        return (
+                            <div
+                                key={`persistent-tab-${index}`}
+                                style={{ display: index === active_tab_index ? 'block' : 'none' }}
+                            >
+                                {child.props.children}
+                            </div>
+                        );
                     }
+
+                    if (index !== active_tab_index) return null;
                     return child.props.children;
                 })}
             </div>
