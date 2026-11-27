@@ -6,6 +6,15 @@
 .run-panel {
     height: 0;
 
+    @include mobile-or-tablet-screen {
+        // The main mobile navigation uses z-index: 20. Keep the running bot's
+        // Summary / Transactions / Journal drawer above that navigation.
+        &__container,
+        &__container--mobile {
+            z-index: 30 !important;
+        }
+    }
+
     &__container {
         height: var(--bot-content-height) !important;
         top: 10.4rem !important;
