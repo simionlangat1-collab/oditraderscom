@@ -140,17 +140,38 @@
     &__content {
         position: relative;
         isolation: isolate;
-        background-image: url('../../../public/assets/images/odi-trading-watermark.webp');
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: min(78%, 52rem);
-        background-blend-mode: normal;
         display: flex;
         justify-content: space-between;
         flex-direction: column;
         overflow: hidden !important;
 
         .dc-tabs {
+            position: relative;
+            z-index: 1;
+
+            &__content {
+                position: relative;
+                isolation: isolate;
+                background: transparent;
+
+                &::before {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                    background-image: url('../../../public/assets/images/odi-trading-watermark.webp');
+                    background-repeat: no-repeat;
+                    background-position: center;
+                    background-size: min(78%, 52rem);
+                    opacity: 0.18;
+                    pointer-events: none;
+                    z-index: 0;
+                }
+
+                > * {
+                    position: relative;
+                    z-index: 1;
+                }
+            }
             &__item {
                 overflow: hidden;
                 text-overflow: ellipsis;
