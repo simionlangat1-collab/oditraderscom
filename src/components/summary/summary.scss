@@ -2,12 +2,31 @@
 @use 'components/shared/styles/mixins' as *;
 
 .summary {
+    position: relative;
     display: flex;
     align-items: center;
     flex-direction: column;
     justify-content: center;
     background: linear-gradient(180deg, var(--general-section-2) 0%, rgb(242 243 244 / 0%) 80%);
     width: 100%;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: url('/assets/images/odi-trading-watermark.webp');
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: min(78%, 52rem);
+        opacity: 0.1;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    > * {
+        position: relative;
+        z-index: 1;
+    }
 
     @include desktop-screen {
         height: inherit;

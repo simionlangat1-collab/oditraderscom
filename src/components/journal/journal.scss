@@ -17,6 +17,29 @@
 }
 
 .journal {
+    &.run-panel-tab__content,
+    &.run-panel-tab__content--no-stat {
+        position: relative;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('/assets/images/odi-trading-watermark.webp');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: min(78%, 52rem);
+            opacity: 0.1;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        > * {
+            position: relative;
+            z-index: 1;
+        }
+    }
+
     .ReactVirtualized__Grid__innerScrollContainer {
         & > :first-child,
         :before,
