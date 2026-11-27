@@ -1,4 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import DerivAPIBasic from '@deriv/deriv-api/dist/DerivAPIBasic';
+import APIMiddleware from '@/external/bot-skeleton/services/api/api-middleware';
+import { getSocketURL } from '@/components/shared';
 import { api_base } from '@/external/bot-skeleton/services/api/api-base';
 import { CONNECTION_STATUS, connectionStatus$ } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { manualTradeService } from './services/manual-trade-service';
@@ -133,15 +136,20 @@ const ManualTrader = () => {
     }, [connection, symbols.length, loadSymbols]);
 
     useEffect(() => {
-        const api = api_base.api as any;
-        if (!socketReady || !api || api.connection?.readyState !== 1 || !symbol) {
+        if (!symbol) {
             setTickConnection('disconnected');
             setDigitTicks([]);
             return undefined;
         }
 
+        // Manual Trader owns a dedicated public market-data socket. It must not
+        // subscribe through api_base: Bot Builder can recreate that shared socket
+        // while starting/stopping a bot, which used to silently kill this feed.
         let active = true;
+        let marketSocket: WebSocket | null = null;
+        let marketApi: any = null;
         let subscriptionId = '';
+        let messageSubscription: any = null;
         latestDigitTickRef.current = null;
         lastLiveTickAtRef.current = Date.now();
         setDigitTicks([]);
@@ -149,37 +157,53 @@ const ManualTrader = () => {
         setTickConnection('connecting');
 
         const precision = (api_base.pip_sizes as Record<string, number>)?.[symbol];
-        const messageSubscription = api.onMessage().subscribe((message: any) => {
-            if (!active) return;
 
-            const rawData = message?.data ?? message;
-            let data = rawData;
-            if (typeof rawData === 'string') {
-                try {
-                    data = JSON.parse(rawData);
-                } catch {
-                    return;
-                }
-            }
-
-            if (data?.msg_type !== 'tick' || data.tick?.symbol !== symbol) return;
-            const quote = Number(data.tick.quote);
-            const epoch = Number(data.tick.epoch);
-            if (!Number.isFinite(quote) || !Number.isFinite(epoch)) return;
-
-            const nextTick = { quote, epoch, digit: getLastDigit(data.tick.quote, precision) };
-            latestDigitTickRef.current = nextTick;
-            lastLiveTickAtRef.current = Date.now();
-            setTickConnection('connected');
-            setDigitTicks(previous => [...previous, nextTick].slice(-TICK_WINDOW));
-        });
-
-        const startStream = async () => {
+        const connectMarketFeed = async () => {
             try {
-                // Load history separately. The live feed must use the dedicated
-                // { ticks, subscribe: 1 } request; ticks_history+subscribe has
-                // been unreliable with the shared Deriv API client.
-                const historyResponse: any = await api.send({
+                const wsUrl = await getSocketURL();
+                if (!active) return;
+
+                marketSocket = new WebSocket(wsUrl);
+                await new Promise<void>((resolve, reject) => {
+                    if (!marketSocket) return reject(new Error('Unable to create market-data connection.'));
+                    const onOpen = () => {
+                        marketSocket?.removeEventListener('error', onError);
+                        resolve();
+                    };
+                    const onError = () => {
+                        marketSocket?.removeEventListener('open', onOpen);
+                        reject(new Error('Manual Trader market-data connection failed.'));
+                    };
+                    marketSocket.addEventListener('open', onOpen, { once: true });
+                    marketSocket.addEventListener('error', onError, { once: true });
+                });
+                if (!active || !marketSocket) return;
+
+                marketApi = new DerivAPIBasic({
+                    connection: marketSocket,
+                    middleware: new APIMiddleware({}),
+                });
+
+                messageSubscription = marketApi.onMessage().subscribe((message: any) => {
+                    if (!active) return;
+                    const rawData = message?.data ?? message;
+                    let data = rawData;
+                    if (typeof rawData === 'string') {
+                        try { data = JSON.parse(rawData); } catch { return; }
+                    }
+                    if (data?.msg_type !== 'tick' || data.tick?.symbol !== symbol) return;
+                    const quote = Number(data.tick.quote);
+                    const epoch = Number(data.tick.epoch);
+                    if (!Number.isFinite(quote) || !Number.isFinite(epoch)) return;
+
+                    const nextTick = { quote, epoch, digit: getLastDigit(data.tick.quote, precision) };
+                    latestDigitTickRef.current = nextTick;
+                    lastLiveTickAtRef.current = Date.now();
+                    setTickConnection('connected');
+                    setDigitTicks(previous => [...previous, nextTick].slice(-TICK_WINDOW));
+                });
+
+                const historyResponse: any = await marketApi.send({
                     ticks_history: symbol,
                     end: 'latest',
                     count: TICK_WINDOW,
@@ -211,35 +235,25 @@ const ManualTrader = () => {
                         .slice(-TICK_WINDOW));
                 }
 
-                // Subscribe to live ticks independently from history.
-                const tickResponse: any = await api.send({ ticks: symbol, subscribe: 1 });
+                const tickResponse: any = await marketApi.send({ ticks: symbol, subscribe: 1 });
                 const tickData = tickResponse?.data ?? tickResponse;
                 if (tickData?.error || tickResponse?.error) {
                     const apiError = tickData?.error || tickResponse.error;
                     throw new Error(apiError.message || apiError.code || 'Unable to subscribe to live market ticks.');
                 }
-
                 subscriptionId = tickData?.subscription?.id || tickResponse?.subscription?.id || '';
+                if (!subscriptionId) throw new Error('Deriv did not return a live tick subscription ID.');
                 if (!active) {
-                    if (subscriptionId) void api.send({ forget: subscriptionId });
+                    try { await marketApi.send({ forget: subscriptionId }); } catch { /* socket closes below */ }
                     return;
                 }
-                if (!subscriptionId) {
-                    throw new Error('Deriv did not return a live tick subscription ID.');
-                }
 
-                // Some API client versions include the first tick in the
-                // subscription acknowledgement rather than onMessage().
                 const firstTick = tickData?.tick || tickResponse?.tick;
                 if (firstTick?.symbol === symbol) {
                     const quote = Number(firstTick.quote);
                     const epoch = Number(firstTick.epoch);
                     if (Number.isFinite(quote) && Number.isFinite(epoch)) {
-                        const nextTick = {
-                            quote,
-                            epoch,
-                            digit: getLastDigit(firstTick.quote, precision),
-                        };
+                        const nextTick = { quote, epoch, digit: getLastDigit(firstTick.quote, precision) };
                         latestDigitTickRef.current = nextTick;
                         lastLiveTickAtRef.current = Date.now();
                         setTickConnection('connected');
@@ -248,39 +262,38 @@ const ManualTrader = () => {
                 }
             } catch (requestError: any) {
                 if (!active) return;
-                const detail =
-                    requestError?.error?.message ||
+                const detail = requestError?.error?.message ||
                     requestError?.data?.error?.message ||
                     requestError?.message ||
                     requestError?.error?.code ||
                     requestError?.code ||
                     (typeof requestError === 'string' ? requestError : '');
-                setTickError(detail || 'Unable to stream market ticks. Check the Deriv connection and selected market.');
+                setTickError(detail || 'Unable to stream market ticks. Check the market-data connection.');
                 setTickConnection('disconnected');
             }
         };
 
-        void startStream();
+        void connectMarketFeed();
         return () => {
             active = false;
             messageSubscription?.unsubscribe?.();
-            if (subscriptionId) void api.send({ forget: subscriptionId });
+            // This socket belongs only to Manual Trader; closing it cannot
+            // forget Bot Builder subscriptions or interrupt its trading socket.
+            try { marketSocket?.close(); } catch { /* already closed */ }
         };
-    }, [symbol, socketReady, socketGeneration, tickStreamRestartKey]);
+    }, [symbol, tickStreamRestartKey]);
 
-    // Only live tick arrivals reset this watchdog; history cannot mask a stalled stream.
+    // Restart only the independent Manual Trader feed if its live ticks stall.
     useEffect(() => {
         const watchdog = window.setInterval(() => {
-            const api = api_base.api as any;
-            if (!socketReady || !symbol || !api || api.connection?.readyState !== 1) return;
-
+            if (!symbol || tickConnection === 'disconnected') return;
             if (!lastLiveTickAtRef.current || Date.now() - lastLiveTickAtRef.current > 20000) {
                 lastLiveTickAtRef.current = Date.now();
                 setTickStreamRestartKey(previous => previous + 1);
             }
         }, 5000);
         return () => window.clearInterval(watchdog);
-    }, [socketReady, symbol]);
+    }, [symbol, tickConnection]);
 
     useEffect(() => {
         let active = true;
