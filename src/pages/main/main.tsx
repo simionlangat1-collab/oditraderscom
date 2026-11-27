@@ -467,6 +467,7 @@ const AppWrapper = observer(() => {
                                     </>
                                 }
                                 id='id-manual-trader'
+                                keep_mounted
                             >
                                 <ManualTrader />
                             </div>
