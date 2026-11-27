@@ -75,6 +75,7 @@ export default class RunPanelStore {
             registerReactions: action,
             onBotRunningEvent: action,
             onBotStopEvent: action,
+            onRiskLimitReached: action,
             onBotReadyEvent: action,
             onBotTradeAgain: action,
             onContractStatusEvent: action,
@@ -444,6 +445,7 @@ export default class RunPanelStore {
         observer.register('bot.running', this.onBotRunningEvent);
         observer.register('bot.sell', this.onBotSellEvent);
         observer.register('bot.stop', this.onBotStopEvent);
+        observer.register('bot.risk_limit_reached', this.onRiskLimitReached);
         observer.register('bot.bot_ready', this.onBotReadyEvent);
         observer.register('bot.click_stop', this.onStopButtonClick);
         observer.register('bot.trade_again', this.onBotTradeAgain);
@@ -530,6 +532,7 @@ export default class RunPanelStore {
         const { ui } = this.core;
         const indicateBotStopped = () => {
             this.error_type = undefined;
+            this.setIsRunning(false);
             this.setContractStage(contract_stages.NOT_RUNNING);
             ui.setAccountSwitcherDisabledMessage();
             this.unregisterBotListeners();
@@ -559,8 +562,11 @@ export default class RunPanelStore {
             this.error_type = undefined;
             this.is_sell_requested = false;
             this.setContractStage(contract_stages.CONTRACT_CLOSED);
-            ui.setAccountSwitcherDisabledMessage();
-            this.unregisterBotListeners();
+            indicateBotStopped();
+        } else {
+            // A normal strategy stop can arrive without an open contract.
+            // Always return the Run Panel to its idle state.
+            indicateBotStopped();
         }
 
         this.setHasOpenContract(false);
@@ -570,6 +576,16 @@ export default class RunPanelStore {
         // listen for new version update
         const listen_new_version = new Event('ListenPWAUpdate');
         document.dispatchEvent(listen_new_version);
+    };
+
+    onRiskLimitReached = (data: { limit?: string; limitValue?: number; currency?: string }) => {
+        const is_target = data?.limit === 'target_profit';
+        const message = is_target
+            ? localize('TARGET PROFIT LIMIT REACHED. Bot stopped.')
+            : localize('STOP LOSS LIMIT REACHED. Bot stopped.');
+
+        botNotification(message, undefined, { type: is_target ? 'success' : 'warning', autoClose: 10000 });
+        this.stopBot();
     };
 
     onBotReadyEvent = () => {
@@ -742,6 +758,7 @@ export default class RunPanelStore {
     unregisterBotListeners = () => {
         observer.unregisterAll('bot.running');
         observer.unregisterAll('bot.stop');
+        observer.unregisterAll('bot.risk_limit_reached');
         observer.unregisterAll('bot.click_stop');
         observer.unregisterAll('bot.stop_button_click');
         observer.unregisterAll('bot.trade_again');
