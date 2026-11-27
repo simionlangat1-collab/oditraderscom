@@ -162,6 +162,31 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
         }
     }, [connectionStatus]);
 
+    // Safety net: the UI limit notification is driven directly by the settled
+    // session profit as well as the trading scheduler. This keeps the notification
+    // visible even if the scheduler path that stopped the bot is not the path that
+    // settled the final contract.
+    useEffect(() => {
+        const targetReached = appliedSettings.targetProfit > 0 && sessionProfit >= appliedSettings.targetProfit;
+        const stopLossReached = appliedSettings.stopLoss > 0 && sessionProfit <= -appliedSettings.stopLoss;
+
+        if (targetReached && targetProfitAchieved === null && stopLossReachedAmount === null) {
+            targetStopTriggeredRef.current = true;
+            tradingRef.current = false;
+            setIsTrading(false);
+            setTargetProfitAchieved(sessionProfit);
+            setStopLossReachedAmount(null);
+            setExecutionMessage('Target Profit reached. Trading stopped automatically.');
+        } else if (stopLossReached && targetProfitAchieved === null && stopLossReachedAmount === null) {
+            targetStopTriggeredRef.current = true;
+            tradingRef.current = false;
+            setIsTrading(false);
+            setStopLossReachedAmount(sessionProfit);
+            setTargetProfitAchieved(null);
+            setExecutionMessage('Stop Loss reached. Trading stopped automatically.');
+        }
+    }, [sessionProfit, appliedSettings.targetProfit, appliedSettings.stopLoss, targetProfitAchieved, stopLossReachedAmount]);
+
     const startTrading = () => {
         if (!isDemoAccount(activeLoginid) || !authData?.is_virtual) {
             setExecutionMessage('DEMO ONLY: switch to a Demo account before starting.');
@@ -579,7 +604,7 @@ const TradingCenter = ({ onExit }: { onExit: () => void }) => {
 
             <div className='tc-performance-grid'>
                 <article className='tc-panel tc-stat-panel'><small>{isDemoAccountState === null ? 'BALANCE' : isDemoAccountState ? 'D. Bal =' : 'R. Bal ='}</small><strong>{accountBalance === null || !Number.isFinite(accountBalance) ? '—' : accountBalance.toFixed(2)} {accountCurrency}</strong></article>
-                <button type='button' className='tc-panel tc-stat-panel tc-stat-panel--start tc-start-button' onClick={isTrading ? () => { tradingRef.current = false; targetStopTriggeredRef.current = true; tradeGenerationRef.current += 1; setIsTrading(false); setExecutionMessage('Trading stopped. Existing contracts remain tracked.'); } : startTrading}>{isTrading && !targetStopTriggeredRef.current ? 'STOP TRADES' : 'START TRADES'}<small>{isTrading && !targetStopTriggeredRef.current ? 'RUNNING · 1s CYCLE' : 'DEMO ONLY'}</small></button>
+                <button type='button' className='tc-panel tc-stat-panel tc-stat-panel--start tc-start-button' onClick={isTrading ? () => { tradingRef.current = false; targetStopTriggeredRef.current = true; tradeGenerationRef.current += 1; setIsTrading(false); setExecutionMessage('Trading stopped. Existing contracts remain tracked.'); } : startTrading}>{isTrading ? 'STOP TRADES' : 'START TRADES'}<small>{isTrading ? 'RUNNING · 1s CYCLE' : 'DEMO ONLY'}</small></button>
                 <article className='tc-panel tc-stat-panel tc-stat-panel--money'><small>PROFIT / LOSS</small><strong>{sessionProfit >= 0 ? '+' : ''}{sessionProfit.toFixed(2)} {accountCurrency}</strong></article>
             </div>
 
