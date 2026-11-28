@@ -28,10 +28,31 @@ export const ManualTraderAnalysisDashboard = ({ ticks, selectedWindow, onWindowC
         () => frequencies.reduce((best, item) => item.count > best.count ? item : best, frequencies[0]),
         [frequencies]
     );
-    const rankedDigits = useMemo(
-        () => [...frequencies].sort((a, b) => a.count - b.count || a.digit - b.digit),
-        [frequencies]
-    );
+    // Rank by distinct frequency levels, not by digit number. Exact ties stay
+    // in the same rank so every tied digit receives the same color.
+    const rankClassByDigit = useMemo(() => {
+        const distinctCounts = Array.from(new Set(frequencies.map(item => item.count))).sort((a, b) => b - a);
+        const highestCount = distinctCounts[0];
+        const secondHighestCount = distinctCounts[1];
+        const lowestCount = distinctCounts[distinctCounts.length - 1];
+        const secondLowestCount = distinctCounts[distinctCounts.length - 2];
+
+        return new Map(
+            frequencies.map(item => {
+                let rankClass = '';
+                if (ticks.length && item.count === highestCount) {
+                    rankClass = 'is-leading';
+                } else if (ticks.length && distinctCounts.length > 1 && item.count === secondHighestCount) {
+                    rankClass = 'is-second';
+                } else if (ticks.length && item.count === lowestCount) {
+                    rankClass = 'is-lowest';
+                } else if (ticks.length && distinctCounts.length > 2 && item.count === secondLowestCount) {
+                    rankClass = 'is-second-lowest';
+                }
+                return [item.digit, rankClass];
+            })
+        );
+    }, [frequencies, ticks.length]);
     const latestTick = ticks.length ? ticks[ticks.length - 1] : null;
     return (
         <section className='analysis-tool manual-trader-analysis'>
@@ -93,10 +114,7 @@ export const ManualTraderAnalysisDashboard = ({ ticks, selectedWindow, onWindowC
                         <div
                             className={[
                                 'analysis-tool__digit-card',
-                                ticks.length && item.digit === highestDigit.digit ? 'is-leading' : '',
-                                ticks.length > 1 && item.digit === rankedDigits[8].digit ? 'is-second' : '',
-                                ticks.length && item.digit === rankedDigits[0].digit ? 'is-lowest' : '',
-                                ticks.length > 1 && item.digit === rankedDigits[1].digit ? 'is-second-lowest' : '',
+                                rankClassByDigit.get(item.digit) || '',
                                 latestTick?.digit === item.digit ? 'is-current' : '',
                                 tradeResultHighlight?.digit === item.digit && tradeResultHighlight.status === 'won' ? 'is-trade-win' : '',
                                 tradeResultHighlight?.digit === item.digit && tradeResultHighlight.status === 'lost' ? 'is-trade-loss' : '',
