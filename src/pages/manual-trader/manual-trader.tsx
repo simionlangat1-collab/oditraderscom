@@ -228,9 +228,21 @@ const ManualTrader = () => {
                     socket.addEventListener('error', onError, { once: true });
                 });
                 if (!active || !marketSocket) return;
-                marketSocket.addEventListener('message', handleMessage);
-                marketSocket.addEventListener('close', () => {
+                const connectedSocket = marketSocket;
+                connectedSocket.addEventListener('message', handleMessage);
+                connectedSocket.addEventListener('close', () => {
                     if (!active) return;
+
+                    // A closed socket must release every outstanding request.
+                    // Otherwise a history/subscription request can remain pending
+                    // forever and keep reconnectInFlight=true, blocking all retries.
+                    pending.forEach(request => request.reject(new Error('Manual Trader market-data socket closed.')));
+                    pending.clear();
+
+                    if (marketSocket === connectedSocket) {
+                        marketSocket = null;
+                    }
+                    setTickConnection('connecting');
                     setTickError('');
                     scheduleReconnect();
                 });
