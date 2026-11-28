@@ -49,11 +49,8 @@ const Tab = ({
         setActiveLineStyle();
     }, [count, label, header_content, setActiveLineStyle]);
 
-    const is_dashboard_tab = label?.trim().toLowerCase() === 'dashboard';
-
     const classes = classNames('dc-tabs__item', {
         'dc-tabs__active': is_active,
-        'dc-tabs__active--dashboard': is_dashboard_tab && is_active,
         [`dc-tabs__active--${className}`]: className && is_active,
         'dc-tabs__item--top': top,
         'dc-tabs__item--bottom': bottom,
