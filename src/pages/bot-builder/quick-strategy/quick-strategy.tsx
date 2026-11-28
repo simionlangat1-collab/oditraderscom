@@ -72,7 +72,7 @@ const FormikWrapper: React.FC<TFormikWrapper> = observer(({ children }) => {
             stake: data?.stake ?? '1',
             loss: data?.loss ?? '',
             profit: data?.profit ?? '',
-            size: data?.size ?? String(qs_config().QUICK_STRATEGY.DEFAULT.size),
+            size: data?.size ?? '2.5',
             unit: data?.unit ?? String(qs_config().QUICK_STRATEGY.DEFAULT.unit),
             action: data?.action ?? 'RUN',
             max_stake: data?.max_stake ?? 10,
