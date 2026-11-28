@@ -18,6 +18,21 @@ const DashboardComponent = observer(({ handleTabChange: _handleTabChange }: TMob
 
     return (
         <div className={classNames('gtr-dashboard', { 'gtr-dashboard--tour-active': active_tour })}>
+            <div className='gtr-dashboard__market-art' aria-hidden='true'>
+                <div className='gtr-candle gtr-candle--1' />
+                <div className='gtr-candle gtr-candle--2' />
+                <div className='gtr-candle gtr-candle--3' />
+                <div className='gtr-candle gtr-candle--4' />
+                <div className='gtr-candle gtr-candle--5' />
+                <div className='gtr-candle gtr-candle--6' />
+                <div className='gtr-candle gtr-candle--7' />
+                <div className='gtr-candle gtr-candle--8' />
+                <div className='gtr-market-line gtr-market-line--one' />
+                <div className='gtr-market-line gtr-market-line--two' />
+                <div className='gtr-market-glow gtr-market-glow--left' />
+                <div className='gtr-market-glow gtr-market-glow--right' />
+            </div>
+
             <div className='gtr-dashboard__hero'>
                 <div className='gtr-dashboard__welcome'>
                     <h1>{localize('Only The Best')}</h1>
@@ -40,6 +55,12 @@ const DashboardComponent = observer(({ handleTabChange: _handleTabChange }: TMob
                 <span>★</span>
                 <strong>Trade Smart. Trade with ODI Traders!</strong>
                 <span>★</span>
+            </div>
+
+            <div className='gtr-dashboard__bottom-art' aria-hidden='true'>
+                <div className='gtr-wave gtr-wave--one' />
+                <div className='gtr-wave gtr-wave--two' />
+                <div className='gtr-stars'>• • • • • • • • • • • •</div>
             </div>
         </div>
     );
