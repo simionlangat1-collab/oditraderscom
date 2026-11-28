@@ -62,20 +62,7 @@ const FormikWrapper: React.FC<TFormikWrapper> = observer(({ children }) => {
     };
 
     const getInitialValue = () => {
-        let data = getSavedValues();
-        const defaults_migrated = localStorage.getItem('qs-defaults-v2') === '1';
-
-        // Migrate the old Quick Strategy defaults once, without affecting
-        // future user-selected values.
-        if (!defaults_migrated) {
-            if (data?.size === 0 || data?.size === '0') {
-                data = { ...data, size: '2.5' };
-            }
-            if (data?.tradetype === 'evenodd') {
-                data = { ...data, tradetype: 'overunder' };
-            }
-            localStorage.setItem('qs-defaults-v2', '1');
-        }
+        const data = getSavedValues();
 
         initial_value = {
             symbol: data?.symbol ?? qs_config().QUICK_STRATEGY.DEFAULT.symbol,
@@ -86,7 +73,7 @@ const FormikWrapper: React.FC<TFormikWrapper> = observer(({ children }) => {
             stake: data?.stake ?? '1',
             loss: data?.loss ?? '',
             profit: data?.profit ?? '',
-            size: data?.size === 0 || data?.size === '0' ? '2.5' : data?.size ?? String(qs_config().QUICK_STRATEGY.DEFAULT.size),
+            size: data?.size ?? String(qs_config().QUICK_STRATEGY.DEFAULT.size),
             unit: data?.unit ?? String(qs_config().QUICK_STRATEGY.DEFAULT.unit),
             action: data?.action ?? 'RUN',
             max_stake: data?.max_stake ?? 10,
