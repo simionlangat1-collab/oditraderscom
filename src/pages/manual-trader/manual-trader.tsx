@@ -149,7 +149,11 @@ const ManualTrader = () => {
         let reconnectTimer: number | null = null;
         let reconnectInFlight = false;
         let hasEverConnected = false;
-        const pending = new Map<number, { resolve: (value: any) => void; reject: (reason: Error) => void }>();
+        const pending = new Map<number, {
+            resolve: (value: any) => void;
+            reject: (reason: Error) => void;
+            timeout: number;
+        }>();
         latestDigitTickRef.current = null;
         lastLiveTickAtRef.current = Date.now();
         setDigitTicks([]);
@@ -164,8 +168,19 @@ const ManualTrader = () => {
             }
             const id = ++requestId;
             return new Promise<any>((resolve, reject) => {
-                pending.set(id, { resolve, reject });
-                marketSocket!.send(JSON.stringify({ ...payload, req_id: id }));
+                const timeout = window.setTimeout(() => {
+                    pending.delete(id);
+                    reject(new Error('Manual Trader market-data request timed out.'));
+                    try { marketSocket?.close(); } catch { /* already closed */ }
+                }, 12000);
+                pending.set(id, { resolve, reject, timeout });
+                try {
+                    marketSocket!.send(JSON.stringify({ ...payload, req_id: id }));
+                } catch (error: any) {
+                    window.clearTimeout(timeout);
+                    pending.delete(id);
+                    reject(new Error(error?.message || 'Unable to send Manual Trader market-data request.'));
+                }
             });
         };
 
@@ -190,6 +205,7 @@ const ManualTrader = () => {
             if (data?.req_id && pending.has(Number(data.req_id))) {
                 const request = pending.get(Number(data.req_id))!;
                 pending.delete(Number(data.req_id));
+                window.clearTimeout(request.timeout);
                 if (data.error) request.reject(new Error(data.error.message || data.error.code || 'Deriv request failed.'));
                 else request.resolve(data);
             }
@@ -219,24 +235,55 @@ const ManualTrader = () => {
                 // Manual Trader must have its own market-data transport.
                 const wsUrl = isProduction() ? WS_SERVERS.PRODUCTION : WS_SERVERS.STAGING;
                 if (!active) return;
-                marketSocket = new WebSocket(wsUrl);
+                const connectingSocket = new WebSocket(wsUrl);
+                marketSocket = connectingSocket;
                 await new Promise<void>((resolve, reject) => {
-                    const socket = marketSocket!;
-                    const onOpen = () => { socket.removeEventListener('error', onError); resolve(); };
-                    const onError = () => { socket.removeEventListener('open', onOpen); reject(new Error('Manual Trader market-data WebSocket failed to open.')); };
-                    socket.addEventListener('open', onOpen, { once: true });
-                    socket.addEventListener('error', onError, { once: true });
+                    let settled = false;
+                    const finish = (error?: Error) => {
+                        if (settled) return;
+                        settled = true;
+                        window.clearTimeout(openTimeout);
+                        connectingSocket.removeEventListener('open', onOpen);
+                        connectingSocket.removeEventListener('error', onError);
+                        connectingSocket.removeEventListener('close', onEarlyClose);
+                        if (error) reject(error);
+                        else resolve();
+                    };
+                    const onOpen = () => finish();
+                    const onError = () => {
+                        if (marketSocket === connectingSocket) marketSocket = null;
+                        try { connectingSocket.close(); } catch { /* already closed */ }
+                        finish(new Error('Manual Trader market-data WebSocket failed to open.'));
+                    };
+                    const onEarlyClose = () => {
+                        if (marketSocket === connectingSocket) marketSocket = null;
+                        finish(new Error('Manual Trader market-data WebSocket closed before connecting.'));
+                    };
+                    const openTimeout = window.setTimeout(() => {
+                        if (marketSocket === connectingSocket) marketSocket = null;
+                        try { connectingSocket.close(); } catch { /* already closed */ }
+                        finish(new Error('Manual Trader market-data connection timed out.'));
+                    }, 10000);
+                    connectingSocket.addEventListener('open', onOpen, { once: true });
+                    connectingSocket.addEventListener('error', onError, { once: true });
+                    connectingSocket.addEventListener('close', onEarlyClose, { once: true });
                 });
-                if (!active || !marketSocket) return;
-                const connectedSocket = marketSocket;
+                if (!active || marketSocket !== connectingSocket) return;
+                const connectedSocket = connectingSocket;
                 connectedSocket.addEventListener('message', handleMessage);
+                connectedSocket.addEventListener('error', () => {
+                    try { connectedSocket.close(); } catch { /* already closed */ }
+                });
                 connectedSocket.addEventListener('close', () => {
                     if (!active) return;
 
                     // A closed socket must release every outstanding request.
                     // Otherwise a history/subscription request can remain pending
                     // forever and keep reconnectInFlight=true, blocking all retries.
-                    pending.forEach(request => request.reject(new Error('Manual Trader market-data socket closed.')));
+                    pending.forEach(request => {
+                        window.clearTimeout(request.timeout);
+                        request.reject(new Error('Manual Trader market-data socket closed.'));
+                    });
                     pending.clear();
 
                     if (marketSocket === connectedSocket) {
@@ -301,7 +348,10 @@ const ManualTrader = () => {
             active = false;
             if (watchdog !== null) window.clearInterval(watchdog);
             if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
-            pending.forEach(request => request.reject(new Error('Manual Trader stream restarted.')));
+            pending.forEach(request => {
+                window.clearTimeout(request.timeout);
+                request.reject(new Error('Manual Trader stream restarted.'));
+            });
             pending.clear();
             if (marketSocket) {
                 marketSocket.removeEventListener('message', handleMessage);
