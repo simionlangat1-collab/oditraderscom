@@ -38,6 +38,31 @@
         border-color: rgba(245, 200, 75, 0.06);
     }
 
+    &__market-art {
+        position: absolute;
+        z-index: 0;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 23rem;
+        overflow: hidden;
+        pointer-events: none;
+        opacity: 0.72;
+
+        &::before,
+        &::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 13rem;
+            height: 5rem;
+            background: linear-gradient(135deg, transparent 30%, rgba(245, 200, 75, 0.9) 31%, rgba(255, 229, 138, 0.95) 43%, transparent 44%);
+        }
+
+        &::before { left: -5rem; transform: rotate(-18deg); }
+        &::after { right: -5rem; transform: rotate(18deg); }
+    }
+
     &__hero {
         position: relative;
         z-index: 1;
@@ -121,6 +146,18 @@
             font-weight: 900;
             white-space: nowrap;
         }
+    }
+
+    &__bottom-art {
+        position: absolute;
+        z-index: 1;
+        left: -5%;
+        right: -5%;
+        bottom: -1.5rem;
+        height: 9rem;
+        overflow: hidden;
+        pointer-events: none;
+        opacity: 0.85;
     }
 
     &__footer {
@@ -229,5 +266,97 @@
 
         &__icon { font-size: 2.25rem; }
         &__label { font-size: 1.15rem; }
+    }
+}
+
+
+.gtr-market-glow {
+    position: absolute;
+    width: 12rem;
+    height: 12rem;
+    border-radius: 50%;
+    background: rgba(245, 200, 75, 0.08);
+    filter: blur(2rem);
+    &--left { left: 0; top: 5rem; }
+    &--right { right: 0; top: 5rem; }
+}
+
+.gtr-candle {
+    position: absolute;
+    width: 0.55rem;
+    background: linear-gradient(180deg, #ffe58a, #b88a22);
+    border-radius: 0.15rem;
+    box-shadow: 0 0 0.35rem rgba(245, 200, 75, 0.25);
+    &::before, &::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        width: 1px;
+        background: rgba(255, 229, 138, 0.65);
+        transform: translateX(-50%);
+    }
+    &::before { top: -1.5rem; height: 1.5rem; }
+    &::after { bottom: -1.3rem; height: 1.3rem; }
+    &--1 { left: 3%; top: 13rem; height: 2.2rem; }
+    &--2 { left: 7%; top: 11rem; height: 3rem; }
+    &--3 { left: 11%; top: 9rem; height: 4rem; }
+    &--4 { left: 16%; top: 12rem; height: 2.7rem; }
+    &--5 { right: 16%; top: 11rem; height: 3.5rem; }
+    &--6 { right: 11%; top: 8.5rem; height: 4.4rem; }
+    &--7 { right: 7%; top: 10.5rem; height: 3.1rem; }
+    &--8 { right: 3%; top: 7.5rem; height: 5rem; }
+}
+
+.gtr-market-line {
+    position: absolute;
+    width: 15rem;
+    height: 7rem;
+    border-top: 1px solid rgba(245, 200, 75, 0.4);
+    transform: skewY(-23deg);
+    &--one { left: -1rem; top: 14rem; }
+    &--two { right: -1rem; top: 13rem; transform: skewY(23deg); }
+}
+
+.gtr-wave {
+    position: absolute;
+    left: -5%;
+    width: 110%;
+    height: 8rem;
+    border-top: 0.35rem solid var(--gtr-gold);
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    box-shadow: 0 -0.5rem 1.4rem rgba(245, 200, 75, 0.2);
+    transform: rotate(-2deg);
+    &--one {
+        top: 2.4rem;
+        background: linear-gradient(180deg, rgba(245, 200, 75, 0.12), rgba(2, 9, 20, 0.98) 70%);
+    }
+    &--two { top: 4.8rem; opacity: 0.55; transform: rotate(2deg); }
+}
+
+.gtr-stars {
+    position: absolute;
+    bottom: 0.3rem;
+    left: 8%;
+    right: 8%;
+    color: rgba(255, 229, 138, 0.55);
+    font-size: 0.55rem;
+    letter-spacing: 1.3rem;
+    text-align: center;
+}
+
+@include mobile-screen {
+    .gtr-dashboard {
+        &__market-art { height: 21rem; }
+        &__bottom-art { height: 7rem; bottom: -0.5rem; }
+    }
+    .gtr-candle {
+        &--1 { left: 1%; }
+        &--2 { left: 6%; }
+        &--3 { left: 11%; }
+        &--4 { left: 17%; }
+        &--5 { right: 17%; }
+        &--6 { right: 11%; }
+        &--7 { right: 6%; }
+        &--8 { right: 1%; }
     }
 }
