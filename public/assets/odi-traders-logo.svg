@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+<defs>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#fff0a8"/><stop offset=".45" stop-color="#f6c84b"/><stop offset="1" stop-color="#c99420"/>
+  </linearGradient>
+  <filter id="shadow"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity=".35"/></filter>
+</defs>
+<circle cx="400" cy="400" r="385" fill="#050d1b" stroke="#fff" stroke-width="16" filter="url(#shadow)"/>
+<circle cx="400" cy="400" r="350" fill="none" stroke="url(#gold)" stroke-width="7"/>
+<g fill="none" stroke="url(#gold)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M300 300V190h115"/><path d="M300 190l92 92 70-68 65 64 92-96"/>
+  <path d="M470 205l56-25-8 60"/>
+  <path d="M315 405l80-74 68 62 73-74"/>
+  <path d="M315 405v70l80 62 141-91v-92"/>
+  <path d="M395 393v144"/><path d="M450 420v80"/><path d="M505 384v78"/><path d="M560 335v86"/>
+</g>
+<g fill="url(#gold)">
+  <rect x="388" y="405" width="14" height="105" rx="5"/><rect x="442" y="372" width="14" height="104" rx="5"/>
+  <rect x="496" y="335" width="14" height="113" rx="5"/><rect x="550" y="290" width="14" height="130" rx="5"/>
+</g>
+<g fill="none" stroke="url(#gold)" stroke-width="8" stroke-linecap="round">
+  <path d="M190 220c-55 65-70 145-55 225 15 77 61 132 130 160"/>
+  <path d="M610 220c55 65 70 145 55 225-15 77-61 132-130 160"/>
+</g>
+<g fill="url(#gold)">
+  <ellipse cx="166" cy="255" rx="15" ry="38" transform="rotate(-28 166 255)"/><ellipse cx="150" cy="305" rx="15" ry="38" transform="rotate(-18 150 305)"/>
+  <ellipse cx="144" cy="360" rx="15" ry="38" transform="rotate(-5 144 360)"/><ellipse cx="150" cy="415" rx="15" ry="38" transform="rotate(12 150 415)"/>
+  <ellipse cx="171" cy="465" rx="15" ry="38" transform="rotate(27 171 465)"/><ellipse cx="204" cy="510" rx="15" ry="38" transform="rotate(42 204 510)"/>
+  <ellipse cx="634" cy="255" rx="15" ry="38" transform="rotate(28 634 255)"/><ellipse cx="650" cy="305" rx="15" ry="38" transform="rotate(18 650 305)"/>
+  <ellipse cx="656" cy="360" rx="15" ry="38" transform="rotate(5 656 360)"/><ellipse cx="650" cy="415" rx="15" ry="38" transform="rotate(-12 650 415)"/>
+  <ellipse cx="629" cy="465" rx="15" ry="38" transform="rotate(-27 629 465)"/><ellipse cx="596" cy="510" rx="15" ry="38" transform="rotate(-42 596 510)"/>
+</g>
+<text x="400" y="570" text-anchor="middle" font-family="Georgia,serif" font-size="180" font-weight="700" letter-spacing="10" fill="url(#gold)">ODI</text>
+<path d="M210 600h380" stroke="url(#gold)" stroke-width="4"/>
+<text x="400" y="665" text-anchor="middle" font-family="Arial,sans-serif" font-size="58" letter-spacing="18" fill="url(#gold)">Traders</text>
+</svg>
