@@ -332,9 +332,9 @@ export const config = () => ({
         },
         DEFAULT: {
             symbol: '1HZ100V',
-            tradetype: 'callput',
+            tradetype: 'overunder',
             durationtype: 't',
-            size: 1,
+            size: 2.5,
             unit: 1,
             prediction: 0,
         },
