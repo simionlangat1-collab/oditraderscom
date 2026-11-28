@@ -229,6 +229,17 @@
         height: 4.5rem;
         font-size: 2.5rem;
         filter: drop-shadow(0 0 0.65rem rgba(245, 200, 75, 0.28));
+
+        &.bot-gold,
+        &.cap-gold {
+            filter:
+                grayscale(1)
+                sepia(1)
+                saturate(7)
+                hue-rotate(355deg)
+                brightness(1.08)
+                drop-shadow(0 0 0.8rem rgba(245, 200, 75, 0.42));
+        }
     }
 
     &__label {
