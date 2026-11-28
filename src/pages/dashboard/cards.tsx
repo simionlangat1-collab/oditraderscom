@@ -8,54 +8,17 @@ type TCardProps = {
     is_mobile: boolean;
 };
 
-const Cards = observer(({ is_mobile }: TCardProps) => {
-    const { load_modal, dashboard, quick_strategy } = useStore();
-    const { toggleLoadModal, setActiveTabIndex } = load_modal;
+const Cards = observer(({ is_mobile: _is_mobile }: TCardProps) => {
+    const { dashboard } = useStore();
     const { setActiveTab } = dashboard;
-    const { setFormVisibility } = quick_strategy;
-
-    const openUpload = () => {
-        toggleLoadModal();
-        setActiveTabIndex(is_mobile ? 0 : 1);
-        setActiveTab(DBOT_TABS.BOT_BUILDER);
-    };
-
-    const openBotBuilder = () => setActiveTab(DBOT_TABS.BOT_BUILDER);
-
-    const openQuickStrategy = () => {
-        setActiveTab(DBOT_TABS.BOT_BUILDER);
-        setFormVisibility(true);
-    };
 
     const actions = [
-        {
-            id: 'upload-bot',
-            label: 'Upload Bot',
-            accent: 'orange',
-            icon: '📁',
-            onClick: openUpload,
-        },
-        {
-            id: 'free-bots',
-            label: 'Free Bots',
-            accent: 'green',
-            icon: '🤖',
-            onClick: openBotBuilder,
-        },
-        {
-            id: 'bot-editor',
-            label: 'Bot Editor',
-            accent: 'purple',
-            icon: '🧩',
-            onClick: openBotBuilder,
-        },
-        {
-            id: 'quick-strategy',
-            label: 'Quick Strategy',
-            accent: 'yellow',
-            icon: '⚡',
-            onClick: openQuickStrategy,
-        },
+        { id: 'bot-builder', label: 'Bot Builder', icon: '🤖', tab: DBOT_TABS.BOT_BUILDER },
+        { id: 'trading-center', label: 'Trade Center', icon: '📈', tab: DBOT_TABS.TRADING_CENTER },
+        { id: 'manual-trader', label: 'Manual Trader', icon: '👆', tab: DBOT_TABS.MANUAL_TRADER },
+        { id: 'charts', label: 'Charts', icon: '📊', tab: DBOT_TABS.CHART },
+        { id: 'tutorial', label: 'Tutorial', icon: '🎓', tab: DBOT_TABS.TUTORIAL },
+        { id: 'success', label: 'Your Success', icon: '🏆', tab: null },
     ];
 
     return (
@@ -64,12 +27,12 @@ const Cards = observer(({ is_mobile }: TCardProps) => {
                 <button
                     key={action.id}
                     type='button'
-                    className={`gtr-action-card gtr-action-card--${action.accent}`}
-                    onClick={action.onClick}
+                    className='gtr-action-card'
+                    onClick={() => action.tab !== null && setActiveTab(action.tab)}
+                    disabled={action.tab === null}
                 >
-                    <span className='gtr-action-card__icon'>{action.icon}</span>
+                    <span className='gtr-action-card__icon' aria-hidden='true'>{action.icon}</span>
                     <span className='gtr-action-card__label'>{action.label}</span>
-                    <span className='gtr-action-card__open'>Open →</span>
                 </button>
             ))}
         </div>
