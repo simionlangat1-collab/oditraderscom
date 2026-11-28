@@ -55,6 +55,18 @@ const FormikWrapper: React.FC<TFormikWrapper> = observer(({ children }) => {
         let data: TFormData | null = null;
         try {
             data = JSON.parse(localStorage.getItem('qs-fields') ?? '{}');
+
+            // Undo the v3 migration's forced Even/Odd -> Over/Under rewrite.
+            // This restores the prior saved Trade Type once, then removes its marker.
+            if (
+                localStorage.getItem('qs-defaults-v3-migrated') &&
+                localStorage.getItem('qs-defaults-v2') === '1' &&
+                data?.tradetype === 'overunder'
+            ) {
+                data = { ...data, tradetype: 'evenodd' };
+                localStorage.setItem('qs-fields', JSON.stringify(data));
+                localStorage.removeItem('qs-defaults-v3-migrated');
+            }
         } catch {
             data = null;
         }
