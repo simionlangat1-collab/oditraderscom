@@ -22,7 +22,7 @@ const DashboardComponent = observer(({ handleTabChange: _handleTabChange }: TMob
                 <div className='gtr-dashboard__welcome'>
                     <h1>{localize('Only The Best')}</h1>
                     <div className='gtr-dashboard__gold-line' aria-hidden='true' />
-                    <img className='gtr-dashboard__logo' src='/logo.jpeg' alt='ODI Traders' />
+                    <img className='gtr-dashboard__logo' src='/assets/odi-traders-logo.svg' alt='ODI Traders' />
                     <p>“Cut losses short, let winners run.”</p>
                 </div>
             </div>
