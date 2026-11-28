@@ -48,9 +48,13 @@ const TradeTypeSelect: React.FC = () => {
                     is_symbol_accumulator
                 );
                 const has_selected = trade_types?.some(trade_type => trade_type.value === selected);
-                if (!has_selected && trade_types?.[0]?.value !== selected) {
-                    setFieldValue?.('tradetype', trade_types?.[0].value || '');
-                    setValue('tradetype', trade_types?.[0].value);
+                if (!has_selected) {
+                    const over_under = trade_types?.find(trade_type =>
+                        /over\s*\/\s*under/i.test(String(trade_type.text ?? ''))
+                    );
+                    const default_trade_type = over_under ?? trade_types?.[0];
+                    setFieldValue?.('tradetype', default_trade_type?.value || '');
+                    setValue('tradetype', default_trade_type?.value);
                 }
                 setTradeTypes(trade_types);
             };
